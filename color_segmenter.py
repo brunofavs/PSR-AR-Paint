@@ -5,7 +5,6 @@ import numpy as np
 from functools import partial
 import json
 
-#TODO Start limits with the values from before
 
 # Can't use a dictionary on onTrackbar since I can't assing default values to a input dictionary.
 
@@ -32,9 +31,9 @@ def onTrackbar(x , dict ,red_min = False,red_max = False,green_min = False,green
         dict['limits']['R']['max'] = x
 
 def main():
-    #-----------------------------
-    # Initialization
-    #-----------------------------
+#-----------------------------
+# Initialization
+#-----------------------------
     parser = argparse.ArgumentParser(description='Video color segmenting') 
 
     #Inicial values just to show the image inicially
