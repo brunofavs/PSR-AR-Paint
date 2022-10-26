@@ -18,12 +18,13 @@ import json
 import pprint
 from copy import deepcopy
 from collections import namedtuple
+import time
 
 #-----------
 # Global variables
 #-----------
 
-centroid_tuple = namedtuple('centroid_tupleeee',['x','y']) # No point in being a dictionary as I dont ever want to change the coordinates of the centroid
+centroid_tuple = namedtuple('centroid_tuple',['x','y']) # No point in being a dictionary as I dont ever want to change the coordinates of the centroid
 # First is the object name, the str is whats shown when printed
 
 #-----------
@@ -79,7 +80,13 @@ def biggestBlob(masked_image):
     
     return cc_mask,centroid
 
-def drawingLine(white_board,points):
+def drawingLine(white_board,points,options):
+
+    if points['x'][-1] == -50 :
+        points['x'].pop(-1)
+        points['y'].pop(-1)
+
+    # If it pops, then it returns and doesnt draw anything, this prevents big lines across to (-50,-50)
 
     #* ---Checking whether there are enough points to draw a line----
     if len(points['x']) < 2: 
@@ -92,7 +99,7 @@ def drawingLine(white_board,points):
     
     #Python passes arguments by assignment, since a np array is mutable, we're just
     #modifying the inicial image, not changing the original memory adress
-    cv2.line(white_board, inicial_point, final_point, (0,0,255), 15)
+    cv2.line(white_board, inicial_point, final_point, options['color'], options['size'])
     
 #-----------
 # Main
@@ -126,6 +133,11 @@ def main():
     src_img[:] = 255
 
     src_img_gui = deepcopy(src_img)
+
+    #* ---Initializing a options dictionary with size and color---
+
+    pencil_options = {'size' : 10, 'color' : (0,0,255)} # Inicial 10px red
+
 
     #-----------------------------
     # Processing
@@ -176,19 +188,12 @@ def main():
             print("Something went wrong, more x's than y's")
             exit()
         
-        if len(centroids['x']) >= 4 :
-            centroids['x'] = centroids['x'][-2:] # If the list gets to big, cleans it back to the last 2, which are needed for drawing
+        if len(centroids['x']) >= 3 :
+            centroids['x'] = centroids['x'][-2:] # If the list gets too big, cleans it back to the last 2, which are needed for drawing
             centroids['y'] = centroids['y'][-2:] 
 
-        # pprint.pprint(centroids)
-
         #* ---Drawing---
-
-        drawingLine(src_img_gui,centroids)
-
-
-
-
+        drawingLine(src_img_gui,centroids,pencil_options)
 
         #-----------------------------
         # Visualization
@@ -208,10 +213,52 @@ def main():
 
 
         #* ---Behavior of keyboard interrupts---
+        # TODO Pass the keyboard interrupts into a separate function to declutter main
         pressed_key = cv2.waitKey(1) & 0xFF # To prevent NumLock issue
         if pressed_key  == ord('q'): 
             print("Quitting program")
             exit()
+        elif pressed_key == ord('r'):
+            pencil_options['color'] = (0,0,255)
+            print("Changing color to red")
+
+        elif pressed_key == ord('g'):
+            pencil_options['color'] = (0,255,0)
+            print("Changing color to green")
+
+        elif pressed_key == ord('b'):
+            pencil_options['color'] = (255,0,0)
+            print("Changing color to blue")
+        
+        elif pressed_key == ord('+'):
+            
+            if pencil_options['size'] < 30 :
+
+                pencil_options['size'] += 1
+                print("Increasing pencil size to " + str(pencil_options['size']))
+            else:
+                print("Max pencil size reached (" + str(pencil_options['size']) + ") !"  )
+
+        elif pressed_key == ord('-'):
+
+            if pencil_options['size'] > 1:
+
+                pencil_options['size'] -= 1
+                print("Decreasing pencil size to " + str(pencil_options['size']))
+            else:
+                print("Min pencil size reached (" + str(pencil_options['size']) + ") !"  )
+
+        elif pressed_key == ord('c'):
+            src_img_gui = src_img # Resets to inicial value
+            print("Clearing whiteboard!")
+
+        elif pressed_key == ord('s'):
+            date = time.ctime(time.time())
+            file_name = "Drawing " + date +".png"
+            print("Saving png image as " + file_name)
+            cv2.imwrite(file_name , src_img_gui) #! Caso seja com o video pode ter de se mudar aqui
+
+            #TODO implementar try except para caso não consiga escrever
             
 
     
