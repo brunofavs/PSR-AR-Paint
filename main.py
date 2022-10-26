@@ -78,6 +78,21 @@ def biggestBlob(masked_image):
 
     
     return cc_mask,centroid
+
+def drawingLine(white_board,points):
+
+    #* ---Checking whether there are enough points to draw a line----
+    if len(points['x']) < 2: 
+        return
+    #It only reaches here if there are enough points to draw a line
+
+    #* ---Drawing the line in the input image----
+    inicial_point = (points['x'][-2],points['y'][-2] )
+    final_point = (points['x'][-1],points['y'][-1] )
+    
+    #Python passes arguments by assignment, since a np array is mutable, we're just
+    #modifying the inicial image, not changing the original memory adress
+    cv2.line(white_board, inicial_point, final_point, (0,0,255), 15)
     
 #-----------
 # Main
@@ -90,8 +105,8 @@ def main():
 
     #* ---Configuration of argparse----
     parser = argparse.ArgumentParser(description='AR paint') 
-    parser.add_argument('-usp','--use_shake_prevention', action='store_true',default = False ,help='Use shake mode : Prevents unintended lines across long distances')
     parser.add_argument('-j','--json',type=str,required=True,help='Absolute path for json file with color thresholds') 
+    parser.add_argument('-usp','--use_shake_prevention', action='store_true',default = False ,help='Use shake mode : Prevents unintended lines across long distances')
     args = parser.parse_args()
 
     #* ---Loading json file into memory----
@@ -102,8 +117,9 @@ def main():
     capture_object = cv2.VideoCapture(0)  #! Camera images will be camera_src_img
     _,camera_source_img = capture_object.read() # Need this to configure resolution
 
+    #* ---Initializing random variables----
+    centroids = { 'x' : [], 'y' : []}
     resolution = camera_source_img.shape
-
 
     #* ---Creating a blank image to drawn on---
     src_img = np.zeros([resolution[0], resolution[1], 3],dtype = np.uint8)
@@ -152,8 +168,26 @@ def main():
 
         cv2.circle(camera_source_img,cc_centroid,10,(0,0,255),-1)
 
+        #* ---Storing centroids---
+        centroids['x'].append(cc_centroid.x) # cc_centroid is a namedTuple
+        centroids['y'].append(cc_centroid.y)
 
+        if len(centroids['x']) != len(centroids['y']): # Just for debbuging, may not ever be necessary
+            print("Something went wrong, more x's than y's")
+            exit()
         
+        if len(centroids['x']) >= 4 :
+            centroids['x'] = centroids['x'][-2:] # If the list gets to big, cleans it back to the last 2, which are needed for drawing
+            centroids['y'] = centroids['y'][-2:] 
+
+        # pprint.pprint(centroids)
+
+        #* ---Drawing---
+
+        drawingLine(src_img_gui,centroids)
+
+
+
 
 
         #-----------------------------
