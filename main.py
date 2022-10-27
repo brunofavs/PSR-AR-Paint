@@ -69,7 +69,7 @@ def biggestBlob(masked_image):
 
     cc_mask[cc_labels==max_label] = cc_labels[cc_labels==max_label] # Matrix with 0's and max label's number
 
-    cc_mask_bool = cc_mask.astype(bool) # Matrix with 0's and 1's
+    # cc_mask_bool = cc_mask.astype(bool) # Matrix with 0's and 1's
 
 
     #* ---Calculates the centroid of the biggest blob----
@@ -169,11 +169,9 @@ def main():
         #* ---Filtering the biggest blob in the image---
 
         cc_mask , cc_centroid = biggestBlob(masked_camera_image)
-        cc_masked_camera_image = np.zeros([resolution[0], resolution[1]],dtype = np.uint8) # Matrix of 0's 480x640
          
-        # TODO Check why the first approach didn't work
-        # cc_masked_camera_image[cc_mask] = masked_camera_image[cc_mask]  # Matrix of 0's and 255's  480x640
         cc_masked_camera_image = np.where(cc_mask,masked_camera_image,0)  
+
 
         #* ---Drawing a x where the centroid is in the source---
         # TODO For now will just draw a circle
@@ -205,15 +203,16 @@ def main():
         cv2.imshow("Biggest Object in Mask",cc_masked_camera_image)
         cv2.imshow("Drawing",src_img_gui)
 
-
+        
         cv2.moveWindow("Camera Source" ,x = 20,y = 0)
         cv2.moveWindow("Mask" ,x = 20,y = resolution[0])
         cv2.moveWindow("Drawing" ,x = resolution[1]+200 ,y = 0)
         cv2.moveWindow("Biggest Object in Mask" ,x = resolution[1]+200 ,y = resolution[0])
 
-
         #* ---Behavior of keyboard interrupts---
         # TODO Pass the keyboard interrupts into a separate function to declutter main
+
+
         pressed_key = cv2.waitKey(1) & 0xFF # To prevent NumLock issue
         if pressed_key  == ord('q'): 
             print("Quitting program")
