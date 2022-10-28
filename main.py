@@ -13,12 +13,18 @@
 import argparse
 import cv2
 import numpy as np
-from functools import partial
 import json
 import pprint
+import time
+
+import puzzle
+
+from functools import partial
 from copy import deepcopy
 from collections import namedtuple
-import time
+
+
+
 
 #-----------
 # Global variables

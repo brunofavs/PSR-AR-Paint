@@ -119,6 +119,7 @@ def puzzleZones(puzzle_BGR):
     label_list = list(range(1,cc_num_lables))
     random.shuffle(label_list)
     
+    print(cc_num_lables)
     reds,greens,blues = splitList(label_list,3) # Each list contains which label corresponds to each color, in case of mod(len(label_list),3) != 0, the blues will have always 1 more
 
     zones_labels_dict = {'blues':blues, 'greens':greens, 'reds': reds}
@@ -140,30 +141,32 @@ def drawZoneLetters(img,centroids,zone_labels_dict):
     y_corr = 8
 
     for i in zone_labels_dict['reds']:
-        cv2.putText(img,'R',(puzzle_centroids[i,0]+x_corr,puzzle_centroids[i,1]+y_corr),cv2.FONT_HERSHEY_COMPLEX,0.7,(0,0,0),2)
+        cv2.putText(img,'R',(centroids[i,0]+x_corr,centroids[i,1]+y_corr),cv2.FONT_HERSHEY_COMPLEX,0.7,(0,0,0),2)
 
     for i in zone_labels_dict['greens']:
-        cv2.putText(img,'G',(puzzle_centroids[i,0]+x_corr,puzzle_centroids[i,1]+y_corr),cv2.FONT_HERSHEY_COMPLEX,0.7,(0,0,0),2)
+        cv2.putText(img,'G',(centroids[i,0]+x_corr,centroids[i,1]+y_corr),cv2.FONT_HERSHEY_COMPLEX,0.7,(0,0,0),2)
 
     for i in zone_labels_dict['blues']:
-        cv2.putText(img,'B',(puzzle_centroids[i,0]+x_corr,puzzle_centroids[i,1]+y_corr),cv2.FONT_HERSHEY_COMPLEX,0.7,(0,0,0),2)
+        cv2.putText(img,'B',(centroids[i,0]+x_corr,centroids[i,1]+y_corr),cv2.FONT_HERSHEY_COMPLEX,0.7,(0,0,0),2)
 
 # -----------
 # Function testing
-# -----------
-puzzle_3D = buildPuzzle((400,600),4)
+# # -----------
 
-mask_dict, puzzle_centroids , zone_labels_dict = puzzleZones(puzzle_3D)
+def main():
+    puzzle_3D = buildPuzzle((400,600),4)
 
-drawZoneLetters(puzzle_3D,puzzle_centroids,zone_labels_dict)
+    mask_dict, puzzle_centroids , zone_labels_dict = puzzleZones(puzzle_3D)
 
+    drawZoneLetters(puzzle_3D,puzzle_centroids,zone_labels_dict)
+    #! Centroid 0 seems to always be off
 
+    cv2.imshow('2fe',puzzle_3D)
+    cv2.imshow('redmask',mask_dict['red_mask'])
+    cv2.imshow('greenmask',mask_dict['green_mask'])
+    cv2.imshow('bluemask',mask_dict['blue_mask'])
+    cv2.waitKey(0)
 
-#! Centroid 0 seems to always be off
-
-cv2.imshow('2fe',puzzle_3D)
-cv2.imshow('redmask',mask_dict['red_mask'])
-cv2.imshow('greenmask',mask_dict['green_mask'])
-cv2.imshow('bluemask',mask_dict['blue_mask'])
-cv2.waitKey(0)
+if __name__ == "__main__":
+    main()
 
