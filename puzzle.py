@@ -116,9 +116,9 @@ def puzzleZones(puzzle_BGR):
 
     #* Assigning labels randomly to r,g,b
 
-    label_list = list(range(1,cc_num_lables+1))
+    label_list = list(range(1,cc_num_lables))
     random.shuffle(label_list)
-
+    
     reds,greens,blues = splitList(label_list,3) # Each list contains which label corresponds to each color, in case of mod(len(label_list),3) != 0, the blues will have always 1 more
 
     zones_labels_dict = {'blues':blues, 'greens':greens, 'reds': reds}
@@ -134,41 +134,29 @@ def puzzleZones(puzzle_BGR):
     return mask_dict, cc_centroids, zones_labels_dict
 
 def drawZoneLetters(img,centroids,zone_labels_dict):
-    
-    red_centroids = []
-    green_centroids = []
-    blue_centroids = []
-
     # print(zone_labels_dict)
     # print(centroids)
+    x_corr = -8
+    y_corr = 8
 
     for i in zone_labels_dict['reds']:
-        if i == 1: # TODO Verify centroid 1 being a background centroid
-            continue
-        red_centroids.append(i)
-        cv2.putText(img,'R',(puzzle_centroids[i-1,0]-2,puzzle_centroids[i-1,1]),cv2.FONT_HERSHEY_COMPLEX,0.7,(0,0,0),2)
+        cv2.putText(img,'R',(puzzle_centroids[i,0]+x_corr,puzzle_centroids[i,1]+y_corr),cv2.FONT_HERSHEY_COMPLEX,0.7,(0,0,0),2)
 
     for i in zone_labels_dict['greens']:
-        if i == 1:
-            continue
-        print("green idx is",i)
-        cv2.putText(img,'G',(puzzle_centroids[i-1,0]-2,puzzle_centroids[i-1,1]),cv2.FONT_HERSHEY_COMPLEX,0.7,(0,0,0),2)
+        cv2.putText(img,'G',(puzzle_centroids[i,0]+x_corr,puzzle_centroids[i,1]+y_corr),cv2.FONT_HERSHEY_COMPLEX,0.7,(0,0,0),2)
 
     for i in zone_labels_dict['blues']:
-        if i == 1:
-            continue
-        print("blue idx is",i)
-        cv2.putText(img,'B',(puzzle_centroids[i-1,0]-2,puzzle_centroids[i-1,1]),cv2.FONT_HERSHEY_COMPLEX,0.7,(0,0,0),2)
+        cv2.putText(img,'B',(puzzle_centroids[i,0]+x_corr,puzzle_centroids[i,1]+y_corr),cv2.FONT_HERSHEY_COMPLEX,0.7,(0,0,0),2)
 
-    
-
-
-
+# -----------
+# Function testing
+# -----------
 puzzle_3D = buildPuzzle((400,600),4)
 
 mask_dict, puzzle_centroids , zone_labels_dict = puzzleZones(puzzle_3D)
 
 drawZoneLetters(puzzle_3D,puzzle_centroids,zone_labels_dict)
+
 
 
 #! Centroid 0 seems to always be off
