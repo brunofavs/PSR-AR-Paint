@@ -69,7 +69,7 @@ def buildPuzzle(res,wanted_lines):
     return puzzle_3D
 
 
-def puzzle_zones(puzzle_BGR):
+def puzzleZones(puzzle_BGR):
     #* This function will yield a dictionary with the masks corresponding to each color, the position of the centroids on which we will draw
     #* the color letter, and the zone_dicts will dictate which label zone is which color
 
@@ -77,6 +77,20 @@ def puzzle_zones(puzzle_BGR):
         length = len(alist)
         return [ alist[i*length // wanted_parts: (i+1)*length // wanted_parts] 
                                                 for i in range(wanted_parts) ]
+
+    def buildMask(cc_labels,label_color_list,res):
+
+        buffer_list = []
+        for i in range(len(label_color_list)):
+            buffer_list.append(np.where(cc_labels == label_color_list[i],255,0))
+
+        mask_int64 = np.zeros( [res[0], res[1]] ,dtype = np.int64) #! Needs to be int64 so that it can add because cc_labels is int64
+        for img in buffer_list:
+            mask_int64 += img
+
+        mask_uint8 = mask_int64.astype(np.uint8)  
+
+        return mask_uint8
 
     res = puzzle_BGR.shape
     #* Converting BGR to Gray
@@ -106,34 +120,24 @@ def puzzle_zones(puzzle_BGR):
 
     zones_labels_dict = {'blues':blues, 'greens':greens, 'reds': reds}
 
-    buffer_list = []
-    for i in range(len(reds)):
-        buffer_list.append(np.where(cc_labels == reds[i],255,0))
-    
-
-    red_mask = np.zeros( [res[0], res[1]] ,dtype = np.int64)
-    for img in buffer_list:
-        red_mask += img
-
-    red_mask_uint8 = red_mask.astype(np.uint8)
-
-    return red_mask_uint8
+    #* Building the masks of 0 and 255
+    red_mask = buildMask(cc_labels,reds,res)
+    green_mask = buildMask(cc_labels,greens,res)
+    blue_mask = buildMask(cc_labels,blues,res)
+   
+    mask_dict = {'red_mask':red_mask,'green_mask':green_mask,'blue_mask':blue_mask }
 
 
-
-
-
-
-
-
+    return mask_dict, cc_centroids, zones_labels_dict
 
 
 puzzle_3D = buildPuzzle((400,600),4)
 
-
-red_mask_uint8 = puzzle_zones(puzzle_3D)
+mask_dict, centroids , zone_labels_dict = puzzleZones(puzzle_3D)
 
 cv2.imshow('2fe',puzzle_3D)
-cv2.imshow('redmask',red_mask_uint8)
+cv2.imshow('redmask',mask_dict['red_mask'])
+cv2.imshow('greenmask',mask_dict['green_mask'])
+cv2.imshow('bluemask',mask_dict['blue_mask'])
 cv2.waitKey(0)
 
