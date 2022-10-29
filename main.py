@@ -13,13 +13,16 @@
 import argparse
 import cv2
 import numpy as np
-from functools import partial
 import json
 import pprint
+import time
+import pick
+
+import puzzle
+
+from functools import partial
 from copy import deepcopy
 from collections import namedtuple
-import time
-import shapes
 
 #-----------
 # Global variables
@@ -58,7 +61,7 @@ def biggestBlob(masked_image):
         empty_mask = np.zeros([resolution[0], resolution[1]],dtype = np.uint8)
         empty_bool_mask = empty_mask.astype(bool)
 
-        centroid = centroid_tuple(x= -50,y=-50) # TODO check if this is valid later on
+        centroid = centroid_tuple(x= -50,y=-50) 
 
         return empty_mask,centroid; 
     else :
@@ -70,7 +73,7 @@ def biggestBlob(masked_image):
 
     cc_mask[cc_labels==max_label] = cc_labels[cc_labels==max_label] # Matrix with 0's and max label's number
 
-    cc_mask_bool = cc_mask.astype(bool) # Matrix with 0's and 1's
+    # cc_mask_bool = cc_mask.astype(bool) # Matrix with 0's and 1's
 
 
     #* ---Calculates the centroid of the biggest blob----
@@ -102,6 +105,94 @@ def drawingLine(white_board,points,options):
     #modifying the inicial image, not changing the original memory adress
     cv2.line(white_board, inicial_point, final_point, options['color'], options['size'])
     
+def keyboardActions(pencil_options,src_img_gui):
+    pressed_key = cv2.waitKey(1) & 0xFF # To prevent NumLock issue
+    if pressed_key  == ord('q'): 
+        print("Quitting program")
+        exit()
+    elif pressed_key == ord('r'):
+        pencil_options['color'] = (0,0,255)
+        print("Changing color to red")
+
+    elif pressed_key == ord('g'):
+        pencil_options['color'] = (0,255,0)
+        print("Changing color to green")
+
+    elif pressed_key == ord('b'):
+        pencil_options['color'] = (255,0,0)
+        print("Changing color to blue")
+    
+    elif pressed_key == ord('+'):
+        
+        if pencil_options['size'] < 50 :
+
+            pencil_options['size'] += 1
+            print("Increasing pencil size to " + str(pencil_options['size']))
+        else:
+            print("Max pencil size reached (" + str(pencil_options['size']) + ") !"  )
+
+    elif pressed_key == ord('-'):
+
+        if pencil_options['size'] > 1:
+
+            pencil_options['size'] -= 1
+            print("Decreasing pencil size to " + str(pencil_options['size']))
+        else:
+            print("Min pencil size reached (" + str(pencil_options['size']) + ") !"  )
+
+    elif pressed_key == ord('c'):
+        src_img_gui[:] = 255 # Resets to inicial value
+        print("Clearing whiteboard!")
+
+    elif pressed_key == ord('s'):
+        date = time.ctime(time.time())
+        file_name = "Drawing " + date +".png"
+        print("Saving png image as " + file_name)
+        cv2.imwrite(file_name , src_img_gui) #! Caso seja com o video pode ter de se mudar aqui
+
+    #TODO implementar try except para caso não consiga escrever
+
+def drawingCore(camera_source_img, masked_camera_image,img_gui,centroids,pencil_options):
+
+        #* ---Filtering the biggest blob in the image---
+
+        cc_mask , cc_centroid = biggestBlob(masked_camera_image)
+         
+        cc_masked_camera_image = np.where(cc_mask,masked_camera_image,0)  
+
+
+        #* ---Drawing a x where the centroid is in the source---
+        # TODO For now will just draw a circle
+
+        cv2.circle(camera_source_img,cc_centroid,10,(0,0,255),-1)
+
+
+        #* ---Storing centroids---
+        centroids['x'].append(cc_centroid.x) # cc_centroid is a namedTuple
+        centroids['y'].append(cc_centroid.y)
+
+        if len(centroids['x']) != len(centroids['y']): # Just for debbuging, may not ever be necessary
+            print("Something went wrong, more x's than y's")
+            exit()
+        
+        if len(centroids['x']) >= 3 :
+            centroids['x'] = centroids['x'][-2:] # If the list gets too big, cleans it back to the last 2, which are needed for drawing
+            centroids['y'] = centroids['y'][-2:] 
+
+        #* ---Drawing---
+        drawingLine(img_gui,centroids,pencil_options)
+
+        #* ---Showing biggest object in mask---
+
+        #! This is here because cc_masked_camera_image is only relevant inside this fc and didn't want to have it as output
+        cv2.imshow("Biggest Object in Mask",cc_masked_camera_image)
+
+
+def puzzleMode():
+    while(1):
+        pass
+
+
 #-----------
 # Main
 #-----------
@@ -117,6 +208,22 @@ def main():
     parser.add_argument('-usp','--use_shake_prevention', action='store_true',default = False ,help='Use shake mode : Prevents unintended lines across long distances')
     args = parser.parse_args()
 
+    #* ---Mode selection----
+
+    title_prompt = "Please choose the gamemode : "
+    options = ["Normal","Puzzle"]
+    option , index = pick.pick(options, title_prompt,indicator="=>")
+
+    puzzle_mode = False
+    normal_mode = False
+
+    if index == 0:
+        normal_mode = True
+    elif index == 1:
+        puzzle_mode = True
+    else:
+        return 
+
     #* ---Loading json file into memory----
     json_inicial_object = open(args.json)
     color_boundaries = json.load(json_inicial_object)
@@ -126,8 +233,9 @@ def main():
     _,camera_source_img = capture_object.read() # Need this to configure resolution
 
     #* ---Initializing random variables----
-    centroids = { 'x' : [], 'y' : []}
     resolution = camera_source_img.shape
+    centroids = { 'x' : [], 'y' : []}
+
 
     #* ---Creating a blank image to drawn on---
     src_img = np.zeros([resolution[0], resolution[1], 3],dtype = np.uint8)
@@ -152,10 +260,25 @@ def main():
     cv2.namedWindow("Camera Source",cv2.WINDOW_AUTOSIZE)
     cv2.namedWindow("Mask",cv2.WINDOW_AUTOSIZE)
     cv2.namedWindow("Biggest Object in Mask",cv2.WINDOW_AUTOSIZE)
-    cv2.namedWindow("Drawing")
+    
+    if puzzle_mode :
+        cv2.namedWindow("Puzzle")
+    else:
+        cv2.namedWindow("Drawing")
+
 
     #* ---Configuring mouseCallback---
     #TODO mouseCallback
+
+    #* ---Puzzle Initialization---
+
+    # TODO Add difficulty, by increasing number of lines
+    
+    if puzzle_mode:
+        src_puzzle = puzzle.buildPuzzle( (resolution[0],resolution[1]), 4)
+        mask_dict, puzzle_centroids , zone_labels_dict = puzzle.puzzleZones(src_puzzle)
+        puzzle.drawZoneLetters(src_puzzle,puzzle_centroids,zone_labels_dict)
+
 
     while(1):
 
@@ -163,115 +286,60 @@ def main():
         _,camera_source_img = capture_object.read()
         camera_source_img = cv2.flip(camera_source_img,1) # Flip image on x-axis
 
-
         #* ---Masked image processing---
         masked_camera_image = cv2.inRange(camera_source_img,lower_bound_bgr,upper_bound_bgr) # Matrix of 0's and 255's
 
-        #* ---Filtering the biggest blob in the image---
+        #* ---Drawing Core---
+        drawingCore(camera_source_img, masked_camera_image,src_img_gui,centroids,pencil_options)
 
-        cc_mask , cc_centroid = biggestBlob(masked_camera_image)
-        cc_masked_camera_image = np.zeros([resolution[0], resolution[1]],dtype = np.uint8) # Matrix of 0's 480x640
-         
-        # TODO Check why the first approach didn't work
-        # cc_masked_camera_image[cc_mask] = masked_camera_image[cc_mask]  # Matrix of 0's and 255's  480x640
-        cc_masked_camera_image = np.where(cc_mask,masked_camera_image,0)  
+        #* ---Puzzle processing---
+        # TODO Figure how to implement this
+       
+        if puzzle_mode:
+            puzzle_painted = np.where(True,src_img_gui,0) # This basically does a copy of src img gui without copying memory adress
+            puzzle_painted[ src_puzzle== (0,0,0) ] = 0
 
-        #* ---Drawing a x where the centroid is in the source---
-        # TODO For now will just draw a circle
+        #* ---Puzzle evaluation---
 
-        cv2.circle(camera_source_img,cc_centroid,10,(0,0,255),-1)
 
         #* ---Storing centroids---
         centroids['x'].append(cc_centroid.x) # cc_centroid is a namedTuple
         centroids['y'].append(cc_centroid.y)
 
-        if len(centroids['x']) != len(centroids['y']): # Just for debbuging, may not ever be necessary
-            print("Something went wrong, more x's than y's")
-            exit()
-        
-        if len(centroids['x']) >= 3 :
-            centroids['x'] = centroids['x'][-2:] # If the list gets too big, cleans it back to the last 2, which are needed for drawing
-            centroids['y'] = centroids['y'][-2:] 
+        #* ---Behavior of keyboard interrupts---
 
-        #* ---Drawing---
-        drawingLine(src_img_gui,centroids,pencil_options)
+        keyboardActions(pencil_options,src_img_gui)
+
 
         #-----------------------------
         # Visualization
         #-----------------------------
 
         #* ---Image showing---
+        #// cv2.imshow("Biggest Object in Mask",cc_masked_camera_image) on drawingCore
         cv2.imshow("Camera Source",camera_source_img)
         cv2.imshow("Mask",masked_camera_image)
-        cv2.imshow("Biggest Object in Mask",cc_masked_camera_image)
-        cv2.imshow("Drawing",src_img_gui)
+        
+        if puzzle_mode :
+            cv2.imshow("Puzzle",puzzle_painted)
+        else:
+            cv2.imshow("Drawing",src_img_gui)
 
 
+
+        
         cv2.moveWindow("Camera Source" ,x = 20,y = 0)
         cv2.moveWindow("Mask" ,x = 20,y = resolution[0])
-        cv2.moveWindow("Drawing" ,x = resolution[1]+200 ,y = 0)
         cv2.moveWindow("Biggest Object in Mask" ,x = resolution[1]+200 ,y = resolution[0])
-
-
-        #* ---Behavior of keyboard interrupts---
-        # TODO Pass the keyboard interrupts into a separate function to declutter main
-        pressed_key = cv2.waitKey(1) & 0xFF # To prevent NumLock issue
-        if pressed_key  == ord('q'): 
-            print("Quitting program")
-            exit()
-        elif pressed_key == ord('r'):
-            pencil_options['color'] = (0,0,255)
-            print("Changing color to red")
-
-        elif pressed_key == ord('g'):
-            pencil_options['color'] = (0,255,0)
-            print("Changing color to green")
-
-        elif pressed_key == ord('b'):
-            pencil_options['color'] = (255,0,0)
-            print("Changing color to blue")
         
-        elif pressed_key == ord('+'):
+        if puzzle_mode:
+            cv2.moveWindow("Puzzle" ,x = resolution[1]+200 ,y = 0)
+        else:
+            cv2.moveWindow("Drawing" ,x = resolution[1]+200 ,y = 0)
+
+        
+        
             
-            if pencil_options['size'] < 30 :
-
-                pencil_options['size'] += 1
-                print("Increasing pencil size to " + str(pencil_options['size']))
-            else:
-                print("Max pencil size reached (" + str(pencil_options['size']) + ") !"  )
-
-        elif pressed_key == ord('-'):
-
-            if pencil_options['size'] > 1:
-
-                pencil_options['size'] -= 1
-                print("Decreasing pencil size to " + str(pencil_options['size']))
-            else:
-                print("Min pencil size reached (" + str(pencil_options['size']) + ") !"  )
-
-        elif pressed_key == ord('c'):
-            src_img_gui = src_img # Resets to inicial value
-            print("Clearing whiteboard!")
-
-        elif pressed_key == ord('s'):
-            date = time.ctime(time.time())
-            file_name = "Drawing " + date +".png"
-            print("Saving png image as " + file_name)
-            cv2.imwrite(file_name , src_img_gui) #! Caso seja com o video pode ter de se mudar aqui
-
-        elif pressed_key == ord('o'):
-            center_points=centroids['x'][-2],centroids['y'][-2]
-            shapes.drawCircle(src_img,center_points,centroids,pencil_options)
-
-            #TODO implementar try except para caso não consiga escrever
-            
-
-    
-
-
-
-
-
     #-----------------------------
     # Termination
     #-----------------------------
