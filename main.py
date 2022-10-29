@@ -188,11 +188,6 @@ def drawingCore(camera_source_img, masked_camera_image,img_gui,centroids,pencil_
         cv2.imshow("Biggest Object in Mask",cc_masked_camera_image)
 
 
-def puzzleMode():
-    while(1):
-        pass
-
-
 #-----------
 # Main
 #-----------
@@ -247,6 +242,23 @@ def main():
 
     pencil_options = {'size' : 10, 'color' : (0,0,255)} # Inicial 10px red
 
+     #* ---Puzzle Initialization---
+
+    # TODO Add difficulty, by increasing number of lines
+    
+    if puzzle_mode:
+         #* ---Calculating a random puzzle matrix---
+        src_puzzle = puzzle.buildPuzzle( (resolution[0],resolution[1]), 4)
+
+         #* ---Sum of all puzzle pixels in 1D---
+        num_of_puzzle_pixels = sum(sum(src_puzzle[:,:,0])) #Important to not include the black pixels in the total, also not the letters
+        #! Important that this is before drawing zone letters
+
+         #* ---Calculating puzzle data---
+        mask_dict, puzzle_centroids , zone_labels_dict = puzzle.puzzleZones(src_puzzle)
+
+         #* ---Drawing letters on zones---
+        puzzle.drawZoneLetters(src_puzzle,puzzle_centroids,zone_labels_dict)
 
     #-----------------------------
     # Processing
@@ -270,15 +282,6 @@ def main():
     #* ---Configuring mouseCallback---
     #TODO mouseCallback
 
-    #* ---Puzzle Initialization---
-
-    # TODO Add difficulty, by increasing number of lines
-    
-    if puzzle_mode:
-        src_puzzle = puzzle.buildPuzzle( (resolution[0],resolution[1]), 4)
-        mask_dict, puzzle_centroids , zone_labels_dict = puzzle.puzzleZones(src_puzzle)
-        puzzle.drawZoneLetters(src_puzzle,puzzle_centroids,zone_labels_dict)
-
 
     while(1):
 
@@ -297,9 +300,41 @@ def main():
        
         if puzzle_mode:
             puzzle_painted = np.where(True,src_img_gui,0) # This basically does a copy of src img gui without copying memory adress
-            puzzle_painted[ src_puzzle== (0,0,0) ] = 0
+
+            src_img_gui[src_puzzle == (0,0,0)] = 0 # This prevents the borders from entering the calculation of correct pixels
+
+            puzzle_painted[ src_puzzle== (0,0,0) ] = 0  # This prevents the borders from being overwritten
 
         #* ---Puzzle evaluation---
+
+        if puzzle_mode:
+            
+            red_channel = src_img_gui[:,:,2]
+            green_channel = src_img_gui[:,:,1]
+            blue_channel = src_img_gui[:,:,0]
+
+
+
+
+            b,g,r = cv2.split(src_img_gui)
+            cv2.imshow('Indices',r)
+
+            red_pxs = (red_channel == 255)
+
+            redsss = red_pxs.astype(np.uint8)  #convert to an unsigned byte
+            redsss*=255
+            cv2.imshow('cast',redsss)
+
+            # print(red_pxs.dtype)
+            # print(mask_dict['red_mask'].dtype)
+
+
+            # red_correct_pxs = np.logical_and( red_pxs,mask_dict['red_mask'] )
+            # print(sum(sum(red_correct_pxs)))
+
+            
+            
+            
 
         
 
