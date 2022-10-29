@@ -260,8 +260,8 @@ def main():
             cv2.imwrite(file_name , src_img_gui) #! Caso seja com o video pode ter de se mudar aqui
 
         elif pressed_key == ord('o'):
-            shapes.drawCircle(src_img_gui,centroids,pencil_options)
-            print('Drawing a circle')
+            center_points=centroids['x'][-2],centroids['y'][-2]
+            shapes.drawCircle(src_img,center_points,centroids,pencil_options)
 
             #TODO implementar try except para caso não consiga escrever
             
