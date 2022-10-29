@@ -16,12 +16,14 @@ import numpy as np
 import json
 import pprint
 import time
+import pick
 
 import puzzle
 
 from functools import partial
 from copy import deepcopy
 from collections import namedtuple
+
 
 
 
@@ -107,6 +109,12 @@ def drawingLine(white_board,points,options):
     #modifying the inicial image, not changing the original memory adress
     cv2.line(white_board, inicial_point, final_point, options['color'], options['size'])
     
+
+def puzzleMode():
+    while(1):
+        pass
+
+
 #-----------
 # Main
 #-----------
@@ -121,6 +129,22 @@ def main():
     parser.add_argument('-j','--json',type=str,required=True,help='Absolute path for json file with color thresholds') 
     parser.add_argument('-usp','--use_shake_prevention', action='store_true',default = False ,help='Use shake mode : Prevents unintended lines across long distances')
     args = parser.parse_args()
+
+    #* ---Mode selection----
+
+    title_prompt = "Please choose the gamemode : "
+    options = ["Normal","Puzzle"]
+    option , index = pick.pick(options, title_prompt,indicator="=>")
+
+    puzzle_mode = False
+    normal_mode = False
+
+    if index == 0:
+        normal_mode = True
+    elif index == 1:
+        puzzle_mode = True
+    else:
+        return 
 
     #* ---Loading json file into memory----
     json_inicial_object = open(args.json)
@@ -161,6 +185,14 @@ def main():
 
     #* ---Configuring mouseCallback---
     #TODO mouseCallback
+
+
+    #* ---Setting gamemode---
+
+    if puzzle_mode :
+        puzzleMode()
+        exit() # To prevent going into normal mode after ending
+
 
     while(1):
 
