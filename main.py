@@ -63,7 +63,7 @@ def biggestBlob(masked_image):
         empty_mask = np.zeros([resolution[0], resolution[1]],dtype = np.uint8)
         empty_bool_mask = empty_mask.astype(bool)
 
-        centroid = centroid_tuple(x= -50,y=-50) # TODO check if this is valid later on
+        centroid = centroid_tuple(x= -50,y=-50) 
 
         return empty_mask,centroid; 
     else :
@@ -254,7 +254,7 @@ def main():
                 print("Min pencil size reached (" + str(pencil_options['size']) + ") !"  )
 
         elif pressed_key == ord('c'):
-            src_img_gui = src_img # Resets to inicial value
+            src_img_gui = deepcopy(src_img) # Resets to inicial value
             print("Clearing whiteboard!")
 
         elif pressed_key == ord('s'):
@@ -265,13 +265,6 @@ def main():
 
             #TODO implementar try except para caso não consiga escrever
             
-
-    
-
-
-
-
-
     #-----------------------------
     # Termination
     #-----------------------------
