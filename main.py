@@ -124,7 +124,7 @@ def keyboardActions(pencil_options,src_img_gui):
     
     elif pressed_key == ord('+'):
         
-        if pencil_options['size'] < 30 :
+        if pencil_options['size'] < 50 :
 
             pencil_options['size'] += 1
             print("Increasing pencil size to " + str(pencil_options['size']))
@@ -152,7 +152,7 @@ def keyboardActions(pencil_options,src_img_gui):
 
     #TODO implementar try except para caso não consiga escrever
 
-def drawingCore(camera_source_img, masked_camera_image,src_img_gui,centroids,pencil_options):
+def drawingCore(camera_source_img, masked_camera_image,img_gui,centroids,pencil_options):
 
         #* ---Filtering the biggest blob in the image---
 
@@ -180,7 +180,7 @@ def drawingCore(camera_source_img, masked_camera_image,src_img_gui,centroids,pen
             centroids['y'] = centroids['y'][-2:] 
 
         #* ---Drawing---
-        drawingLine(src_img_gui,centroids,pencil_options)
+        drawingLine(img_gui,centroids,pencil_options)
 
         #* ---Showing biggest object in mask---
 
@@ -260,17 +260,24 @@ def main():
     cv2.namedWindow("Camera Source",cv2.WINDOW_AUTOSIZE)
     cv2.namedWindow("Mask",cv2.WINDOW_AUTOSIZE)
     cv2.namedWindow("Biggest Object in Mask",cv2.WINDOW_AUTOSIZE)
-    cv2.namedWindow("Drawing")
+    
+    if puzzle_mode :
+        cv2.namedWindow("Puzzle")
+    else:
+        cv2.namedWindow("Drawing")
+
 
     #* ---Configuring mouseCallback---
     #TODO mouseCallback
 
+    #* ---Puzzle Initialization---
 
-    #* ---Setting gamemode---
-
-    if puzzle_mode :
-        puzzleMode()
-        exit() # To prevent going into normal mode after ending
+    # TODO Add difficulty, by increasing number of lines
+    
+    if puzzle_mode:
+        src_puzzle = puzzle.buildPuzzle( (resolution[0],resolution[1]), 4)
+        mask_dict, puzzle_centroids , zone_labels_dict = puzzle.puzzleZones(src_puzzle)
+        puzzle.drawZoneLetters(src_puzzle,puzzle_centroids,zone_labels_dict)
 
 
     while(1):
@@ -283,34 +290,48 @@ def main():
         masked_camera_image = cv2.inRange(camera_source_img,lower_bound_bgr,upper_bound_bgr) # Matrix of 0's and 255's
 
         #* ---Drawing Core---
-
         drawingCore(camera_source_img, masked_camera_image,src_img_gui,centroids,pencil_options)
+
+        #* ---Puzzle processing---
+        # TODO Figure how to implement this
+       
+        if puzzle_mode:
+            puzzle_painted = np.where(True,src_img_gui,0) # This basically does a copy of src img gui without copying memory adress
+            puzzle_painted[ src_puzzle== (0,0,0) ] = 0
+
+        #* ---Puzzle evaluation---
+
 
         #* ---Behavior of keyboard interrupts---
 
         keyboardActions(pencil_options,src_img_gui)
 
-        #* ---Puzzle---
-        # TODO Figure how to implement this
-        if puzzle_mode :
-            puzzle_mode()
-            continue
 
         #-----------------------------
         # Visualization
         #-----------------------------
 
         #* ---Image showing---
+        #// cv2.imshow("Biggest Object in Mask",cc_masked_camera_image) on drawingCore
         cv2.imshow("Camera Source",camera_source_img)
         cv2.imshow("Mask",masked_camera_image)
-        # cv2.imshow("Biggest Object in Mask",cc_masked_camera_image) on drawingCore
-        cv2.imshow("Drawing",src_img_gui)
+        
+        if puzzle_mode :
+            cv2.imshow("Puzzle",puzzle_painted)
+        else:
+            cv2.imshow("Drawing",src_img_gui)
+
+
 
         
         cv2.moveWindow("Camera Source" ,x = 20,y = 0)
         cv2.moveWindow("Mask" ,x = 20,y = resolution[0])
-        cv2.moveWindow("Drawing" ,x = resolution[1]+200 ,y = 0)
         cv2.moveWindow("Biggest Object in Mask" ,x = resolution[1]+200 ,y = resolution[0])
+        
+        if puzzle_mode:
+            cv2.moveWindow("Puzzle" ,x = resolution[1]+200 ,y = 0)
+        else:
+            cv2.moveWindow("Drawing" ,x = resolution[1]+200 ,y = 0)
 
         
         
