@@ -19,6 +19,7 @@ import pprint
 from copy import deepcopy
 from collections import namedtuple
 import time
+import shapes
 
 #-----------
 # Global variables
@@ -257,6 +258,10 @@ def main():
             file_name = "Drawing " + date +".png"
             print("Saving png image as " + file_name)
             cv2.imwrite(file_name , src_img_gui) #! Caso seja com o video pode ter de se mudar aqui
+
+        elif pressed_key == ord('o'):
+            shapes.drawCircle(src_img_gui,centroids,pencil_options)
+            print('Drawing a circle')
 
             #TODO implementar try except para caso não consiga escrever
             
