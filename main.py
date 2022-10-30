@@ -15,7 +15,6 @@ from math import sqrt
 import cv2
 import numpy as np
 import json
-import pprint
 import time
 import pick
 
