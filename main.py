@@ -11,6 +11,7 @@
 # Imports
 #-----------
 import argparse
+from multiprocessing.connection import wait
 import cv2
 import numpy as np
 import json
@@ -23,6 +24,7 @@ import puzzle
 from functools import partial
 from copy import deepcopy
 from collections import namedtuple
+
 
 #-----------
 # Global variables
@@ -105,7 +107,7 @@ def drawingLine(white_board,points,options):
     #modifying the inicial image, not changing the original memory adress
     cv2.line(white_board, inicial_point, final_point, options['color'], options['size'])
     
-def keyboardActions(pencil_options,src_img_gui):
+def keyboardActions(pencil_options,src_img_gui,counter):
     pressed_key = cv2.waitKey(1) & 0xFF # To prevent NumLock issue
     if pressed_key  == ord('q'): 
         print("Quitting program")
@@ -150,6 +152,7 @@ def keyboardActions(pencil_options,src_img_gui):
         print("Saving png image as " + file_name)
         cv2.imwrite(file_name , src_img_gui) #! Caso seja com o video pode ter de se mudar aqui
 
+
     #TODO implementar try except para caso não consiga escrever
 
 def drawingCore(camera_source_img, masked_camera_image,img_gui,centroids,pencil_options):
@@ -181,7 +184,6 @@ def drawingCore(camera_source_img, masked_camera_image,img_gui,centroids,pencil_
 
         #* ---Drawing---
         drawingLine(img_gui,centroids,pencil_options)
-
         #* ---Showing biggest object in mask---
 
         #! This is here because cc_masked_camera_image is only relevant inside this fc and didn't want to have it as output
@@ -192,7 +194,26 @@ def puzzleMode():
     while(1):
         pass
 
+def switchOutput(background, camera_image):
+    counter= False
 
+    while True:
+        image_flip=camera_image
+
+        mask = cv2.inRange(background,(0,0,0),(0,0,255))
+        mask = mask.astype(bool)
+
+        if counter:
+            image_flip[mask] = background[mask]  #! joins the circle and the camera image
+
+        k = cv2.waitKey(1)
+        if k == 27:
+            cv2.destroyAllWindows()
+            break
+        if k == ord('v'):
+            counter = not counter
+            print('Switched Output')
+    return background
 #-----------
 # Main
 #-----------
@@ -246,7 +267,6 @@ def main():
     #* ---Initializing a options dictionary with size and color---
 
     pencil_options = {'size' : 10, 'color' : (0,0,255)} # Inicial 10px red
-
 
     #-----------------------------
     # Processing
@@ -303,12 +323,12 @@ def main():
 
 
         #* ---Storing centroids---
-        centroids['x'].append(cc_centroid.x) # cc_centroid is a namedTuple
-        centroids['y'].append(cc_centroid.y)
+        #centroids['x'].append(cc_centroid.x) # cc_centroid is a namedTuple
+        #centroids['y'].append(cc_centroid.y)
 
         #* ---Behavior of keyboard interrupts---
 
-        keyboardActions(pencil_options,src_img_gui)
+        keyboardActions(pencil_options,src_img_gui,camera_source_img)
 
 
         #-----------------------------
@@ -316,17 +336,17 @@ def main():
         #-----------------------------
 
         #* ---Image showing---
+        switchOutput(src_img_gui,camera_source_img)
         #// cv2.imshow("Biggest Object in Mask",cc_masked_camera_image) on drawingCore
         cv2.imshow("Camera Source",camera_source_img)
         cv2.imshow("Mask",masked_camera_image)
         
+
         if puzzle_mode :
             cv2.imshow("Puzzle",puzzle_painted)
         else:
             cv2.imshow("Drawing",src_img_gui)
-
-
-
+                
         
         cv2.moveWindow("Camera Source" ,x = 20,y = 0)
         cv2.moveWindow("Mask" ,x = 20,y = resolution[0])

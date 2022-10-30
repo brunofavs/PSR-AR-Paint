@@ -1,32 +1,33 @@
 #!/usr/bin/env python3
 
-# function must have centroid coords as an input
-# 's' key for squares, 'e' key for ellipses and 'o' key for circles
-# for the cirle, when the 'o' key is pressed the centroid position is the circle origin
-# in the ellipse case
-
 import cv2
 from math import sqrt
+from pynput import keyboard
+
+coords={'ix':-1,'iy':-1,'x':-1,'y':-1}
+
+def drawCircle(white_board, points, options):
+    
+    def on_press(key):
+        if 'char' in dir(key) and key.char == 'p':
+            coords['ix'],coords['iy'] = points['x'][-2],points['y'][-2]
+            print(coords['ix'],coords['iy'])
+
+    def on_release(key):
+        if 'char' in dir(key) and key.char == 'p':
+            coords['x'],coords['y'] = points['x'][-2],points['y'][-2]
+            radius = int(sqrt(((coords['ix'] - coords['x'])**2)+((coords['iy'] - coords['y'])**2)))
+            cv2.circle(white_board, (coords['ix'], coords('iy')), radius, options['color'], options['size'])
+
+    # Collect events until released
+    with keyboard.Listener(
+            on_press=on_press,
+            on_release=on_release) as listener:
+        listener.join()
 
 
-def drawCircle(white_board, center_points, points, options):
-    """""
-    center_point = center_points
-    final_point = (points['x'][-1], points['y'][-1])
-    cx, cy = center_point[0], center_point[1]
-    rx, ry = final_point[0], final_point[1]
-    radius = int(sqrt(((cx-rx)**2)+((cy-ry)**2)))
-    #white_board_copy = white_board.copy()
-    cv2.circle(white_board, center_point, radius, options['color'], options['size'])
-"""""
+def drawSquare(white_board, points, options):
     pass
-
-def drawSquares(white_board, points, options):
-
-    center_point = (points['x'][-2], points['y'][-2])
-    final_point = (points['x'][-1], points['y'][-1])
-    print(center_point + '' + final_point)
-
 
 def drawEllipse():
     pass
