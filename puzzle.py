@@ -97,9 +97,11 @@ def puzzleZones(puzzle_BGR):
         for img in buffer_list:
             mask_int64 += img
 
-        mask_uint8 = mask_int64.astype(np.uint8)  
+        mask_bool = mask_int64.astype(bool)  
+        # mask_uint8 = mask_int64.astype(np.uint8)  
 
-        return mask_uint8
+        return mask_bool
+        # return mask_uint8
 
     res = puzzle_BGR.shape
     #* Converting BGR to Gray

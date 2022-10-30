@@ -190,30 +190,6 @@ def drawingCore(camera_source_img, masked_camera_image,img_gui,centroids,pencil_
         cv2.imshow("Biggest Object in Mask",cc_masked_camera_image)
 
 
-def puzzleMode():
-    while(1):
-        pass
-
-def switchOutput(background, camera_image):
-    counter= False
-
-    while True:
-        image_flip=camera_image
-
-        mask = cv2.inRange(background,(0,0,0),(0,0,255))
-        mask = mask.astype(bool)
-
-        if counter:
-            image_flip[mask] = background[mask]  #! joins the circle and the camera image
-
-        k = cv2.waitKey(1)
-        if k == 27:
-            cv2.destroyAllWindows()
-            break
-        if k == ord('v'):
-            counter = not counter
-            print('Switched Output')
-    return background
 #-----------
 # Main
 #-----------
@@ -268,6 +244,25 @@ def main():
 
     pencil_options = {'size' : 10, 'color' : (0,0,255)} # Inicial 10px red
 
+     #* ---Puzzle Initialization---
+
+    # TODO Add difficulty, by increasing number of lines
+    
+    if puzzle_mode:
+         #* ---Calculating a random puzzle matrix---
+        src_puzzle = puzzle.buildPuzzle( (resolution[0],resolution[1]), 4)
+
+         #* ---Sum of all puzzle pixels in 1D---
+        num_of_puzzle_pixels = src_puzzle[:,:,0].size#Important to not include the black pixels in the total, also not the letters
+        #! Important that this is before drawing zone letters
+        
+
+         #* ---Calculating puzzle data---
+        mask_dict, puzzle_centroids , zone_labels_dict = puzzle.puzzleZones(src_puzzle)
+
+         #* ---Drawing letters on zones---
+        puzzle.drawZoneLetters(src_puzzle,puzzle_centroids,zone_labels_dict)
+
     #-----------------------------
     # Processing
     #-----------------------------
@@ -290,15 +285,6 @@ def main():
     #* ---Configuring mouseCallback---
     #TODO mouseCallback
 
-    #* ---Puzzle Initialization---
-
-    # TODO Add difficulty, by increasing number of lines
-    
-    if puzzle_mode:
-        src_puzzle = puzzle.buildPuzzle( (resolution[0],resolution[1]), 4)
-        mask_dict, puzzle_centroids , zone_labels_dict = puzzle.puzzleZones(src_puzzle)
-        puzzle.drawZoneLetters(src_puzzle,puzzle_centroids,zone_labels_dict)
-
 
     while(1):
 
@@ -316,11 +302,45 @@ def main():
         # TODO Figure how to implement this
        
         if puzzle_mode:
+            
             puzzle_painted = np.where(True,src_img_gui,0) # This basically does a copy of src img gui without copying memory adress
-            puzzle_painted[ src_puzzle== (0,0,0) ] = 0
+
+            # TODO Figure out why the ***** commenting this fixes blue_only_mask
+            # src_img_gui[src_puzzle == (0,0,0)] =  0 # This prevents the borders from entering the calculation of correct pixels
+
+            puzzle_painted[ src_puzzle== (0,0,0) ] = 0  # This draws the puzzle on puzzle_painted
 
         #* ---Puzzle evaluation---
 
+        if puzzle_mode:
+            
+            blue_channel  = src_img_gui  [:,:,0]
+            green_channel = src_img_gui  [:,:,1]
+            red_channel   = src_img_gui  [:,:,2]
+
+
+            blue_only_mask  = np.logical_and((red_channel == 0) , (green_channel == 0)  , (blue_channel == 255) )
+            green_only_mask = np.logical_and((red_channel == 0) , (green_channel == 255), (blue_channel == 0)   )
+            red_only_mask   = np.logical_and((red_channel == 255), (green_channel == 0) , (blue_channel == 255) )
+
+            blue_correct_pxs  = sum( sum(np.logical_and(blue_only_mask , mask_dict['blue_mask']  )))
+            green_correct_pxs = sum( sum(np.logical_and(green_only_mask, mask_dict['green_mask'] )))
+            red_correct_pxs   = sum( sum(np.logical_and(red_only_mask  , mask_dict['red_mask']   )))
+
+
+            blue_incorrect_pxs  = sum( sum( np.logical_and(blue_only_mask , np.logical_not(mask_dict['blue_mask']  ))))
+            green_incorrect_pxs = sum( sum( np.logical_and(green_only_mask, np.logical_not(mask_dict['green_mask'] ))))
+            red_incorrect_pxs   = sum( sum( np.logical_and(red_only_mask  , np.logical_not(mask_dict['red_mask']   ))))
+
+            score_numerator = (blue_correct_pxs + green_correct_pxs + red_correct_pxs) - (blue_incorrect_pxs + green_incorrect_pxs + red_incorrect_pxs)
+            # print('numertator is',score_numerator)
+            # print(num_of_puzzle_pixels)
+            score = int((score_numerator/num_of_puzzle_pixels)*100)
+
+            if score < 0:
+                score = 0
+
+            print("Your score is ",score," %.")
 
         #* ---Storing centroids---
         #centroids['x'].append(cc_centroid.x) # cc_centroid is a namedTuple
@@ -374,3 +394,22 @@ def main():
 if __name__ == "__main__":
     main()
 
+        # TODO Clean this once debugged
+
+            # red_only_mask = red_only_mask.astype(np.uint8)  #convert to an unsigned byte
+            # red_only_mask*=255
+
+            # green_only_mask = green_only_mask.astype(np.uint8)  #convert to an unsigned byte
+            # green_only_mask*=255
+
+            # blue_only_mask = blue_only_mask.astype(np.uint8)  #convert to an unsigned byte
+            # blue_only_mask*=255
+
+            # cv2.imshow('red',red_only_mask)
+            # cv2.imshow('green',green_only_mask)
+            # cv2.imshow('blue',blue_only_mask)
+
+
+            # # cv2.imshow('blue channel',blue_channel)
+            # # cv2.imshow('green channel',green_channel)
+            # # cv2.imshow('red channel',red_channel)
