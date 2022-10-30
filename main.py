@@ -195,11 +195,15 @@ def drawingCore(camera_source_img, masked_camera_image,img_gui,centroids,pencil_
 
 def switchOutput(src_img_gui,camera_source_img,switcher):
    
-    mask = cv2.inRange(src_img_gui,(0,0,0),(0,0,255))
-    mask = mask.astype(bool)
+    red_mask = cv2.inRange(src_img_gui,(0,0,0),(0,0,255))
+    red_mask = red_mask.astype(bool)
+    green_mask = cv2.inRange(src_img_gui,(0,0,0),(0,255,255))
+    green_mask = green_mask.astype(bool)
+    blue_mask = cv2.inRange(src_img_gui,(0,0,0),(255,0,0))
+    blue_mask = blue_mask.astype(bool)
 
     if switcher['counter']:
-        camera_source_img[mask] = src_img_gui[mask]  #! joins the circle and the camera image
+        camera_source_img[red_mask + green_mask + blue_mask] = src_img_gui[red_mask + green_mask + blue_mask]   #! joins the circle and the camera image
 
 
 #-----------
