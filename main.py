@@ -107,7 +107,7 @@ def drawingLine(white_board,points,options):
     #modifying the inicial image, not changing the original memory adress
     cv2.line(white_board, inicial_point, final_point, options['color'], options['size'])
     
-def keyboardActions(pencil_options,src_img_gui,counter):
+def keyboardActions(pencil_options,src_img_gui,switcher):
     pressed_key = cv2.waitKey(1) & 0xFF # To prevent NumLock issue
     if pressed_key  == ord('q'): 
         print("Quitting program")
@@ -152,6 +152,10 @@ def keyboardActions(pencil_options,src_img_gui,counter):
         print("Saving png image as " + file_name)
         cv2.imwrite(file_name , src_img_gui) #! Caso seja com o video pode ter de se mudar aqui
 
+    elif pressed_key == ord('v'):
+        switcher['counter'] = not switcher['counter']
+        
+
 
     #TODO implementar try except para caso não consiga escrever
 
@@ -189,6 +193,14 @@ def drawingCore(camera_source_img, masked_camera_image,img_gui,centroids,pencil_
         #! This is here because cc_masked_camera_image is only relevant inside this fc and didn't want to have it as output
         cv2.imshow("Biggest Object in Mask",cc_masked_camera_image)
 
+def switchOutput(src_img_gui,camera_source_img,switcher):
+   
+    mask = cv2.inRange(src_img_gui,(0,0,0),(0,0,255))
+    mask = mask.astype(bool)
+
+    if switcher['counter']:
+        camera_source_img[mask] = src_img_gui[mask]  #! joins the circle and the camera image
+
 
 #-----------
 # Main
@@ -204,6 +216,9 @@ def main():
     parser.add_argument('-j','--json',type=str,required=True,help='Absolute path for json file with color thresholds') 
     parser.add_argument('-usp','--use_shake_prevention', action='store_true',default = False ,help='Use shake mode : Prevents unintended lines across long distances')
     args = parser.parse_args()
+
+    #* ---Configuration of variable for flip flop to use with switchOutput function
+    switcher = {'counter': False}
 
     #* ---Mode selection----
 
@@ -348,15 +363,19 @@ def main():
 
         #* ---Behavior of keyboard interrupts---
 
-        keyboardActions(pencil_options,src_img_gui,camera_source_img)
+        keyboardActions(pencil_options,src_img_gui,switcher)
 
 
         #-----------------------------
         # Visualization
         #-----------------------------
 
+        #* ---Switch the drawing background from whiteboard to camera and vise-versa---
+
+        switchOutput(src_img_gui,camera_source_img,switcher)
+
         #* ---Image showing---
-        switchOutput(src_img_gui,camera_source_img)
+        
         #// cv2.imshow("Biggest Object in Mask",cc_masked_camera_image) on drawingCore
         cv2.imshow("Camera Source",camera_source_img)
         cv2.imshow("Mask",masked_camera_image)
