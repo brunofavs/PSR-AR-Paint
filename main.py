@@ -11,6 +11,7 @@
 # Imports
 #-----------
 import argparse
+from math import sqrt
 import cv2
 import numpy as np
 import json
@@ -24,6 +25,7 @@ from functools import partial
 from copy import deepcopy
 from collections import namedtuple
 
+
 #-----------
 # Global variables
 #-----------
@@ -34,6 +36,13 @@ centroid_tuple = namedtuple('centroid_tuple',['x','y']) # No point in being a di
 #-----------
 # Functions
 #-----------
+
+def mouseCallback(event,x,y,flag,param,points):
+
+    if event == cv2.EVENT_LBUTTONDOWN:
+        points['x'].append(x)
+        points['y'].append(y)
+    return
 
 def biggestBlob(masked_image):
 #* Receives the unfiltered masked image and returns the mask with the biggest blob and it's centroid
@@ -84,28 +93,39 @@ def biggestBlob(masked_image):
     
     return cc_mask,centroid
 
-def drawingLine(white_board,points,options):
+def drawingLine(white_board,points,options,usp):
 
-    if points['x'][-1] == -50 :
-        points['x'].pop(-1)
-        points['y'].pop(-1)
+    # The first iteration is skipped, then it first checks if its too far away then draws a point, if not procceds to try to draw a line
 
-    # If it pops, then it returns and doesnt draw anything, this prevents big lines across to (-50,-50)
+    if points['x'] == []:
+        return
 
     #* ---Checking whether there are enough points to draw a line----
+        # I want to return always if there are less than 2 but only draw a point if theres atleast 1
     if len(points['x']) < 2: 
+        cv2.circle(white_board, (points['x'][-1],points['y'][-1]) , options['size'] //2 ,options['color'], -1)
+
         return
     #It only reaches here if there are enough points to draw a line
 
-    #* ---Drawing the line in the input image----
+    #* ---Points----
     inicial_point = (points['x'][-2],points['y'][-2] )
     final_point = (points['x'][-1],points['y'][-1] )
     
+    #* ---Checking whether distance is good if ups----
+    if usp: 
+        distance = round(sqrt((inicial_point[0]-final_point[0])**2+(inicial_point[1]-final_point[1])**2))
+        if distance > 100:
+            cv2.circle(white_board, (points['x'][-1],points['y'][-1]) , options['size'] //2 ,options['color'], -1)
+            return
+
+    #* ---Drawing the line in the input image----
+
     #Python passes arguments by assignment, since a np array is mutable, we're just
     #modifying the inicial image, not changing the original memory adress
     cv2.line(white_board, inicial_point, final_point, options['color'], options['size'])
     
-def keyboardActions(pencil_options,src_img_gui):
+def keyboardActions(pencil_options,src_img_gui,centroids,switcher):
     pressed_key = cv2.waitKey(1) & 0xFF # To prevent NumLock issue
     if pressed_key  == ord('q'): 
         print("Quitting program")
@@ -142,6 +162,8 @@ def keyboardActions(pencil_options,src_img_gui):
 
     elif pressed_key == ord('c'):
         src_img_gui[:] = 255 # Resets to inicial value
+        centroids['x'] = []
+        centroids['y'] = []
         print("Clearing whiteboard!")
 
     elif pressed_key == ord('s'):
@@ -150,42 +172,54 @@ def keyboardActions(pencil_options,src_img_gui):
         print("Saving png image as " + file_name)
         cv2.imwrite(file_name , src_img_gui) #! Caso seja com o video pode ter de se mudar aqui
 
+    elif pressed_key == ord('v'):
+        switcher['counter'] = not switcher['counter']
+        
+
+
     #TODO implementar try except para caso não consiga escrever
 
-def drawingCore(camera_source_img, masked_camera_image,img_gui,centroids,pencil_options):
+def drawingCore(camera_source_img, masked_camera_image,img_gui,centroids,pencil_options,usp):
 
         #* ---Filtering the biggest blob in the image---
 
         cc_mask , cc_centroid = biggestBlob(masked_camera_image)
-         
         cc_masked_camera_image = np.where(cc_mask,masked_camera_image,0)  
 
 
         #* ---Drawing a x where the centroid is in the source---
         # TODO For now will just draw a circle
-
-        cv2.circle(camera_source_img,cc_centroid,10,(0,0,255),-1)
+        cv2.drawMarker(camera_source_img, cc_centroid, (0,0,255), 0, 20, 2)
+        #cv2.circle(camera_source_img,cc_centroid,10,(0,0,255),-1)
 
 
         #* ---Storing centroids---
-        centroids['x'].append(cc_centroid.x) # cc_centroid is a namedTuple
-        centroids['y'].append(cc_centroid.y)
+
+        if cc_centroid.x != -50:
+            centroids['x'].append(cc_centroid.x) # cc_centroid is a namedTuple
+            centroids['y'].append(cc_centroid.y)
 
         if len(centroids['x']) != len(centroids['y']): # Just for debbuging, may not ever be necessary
             print("Something went wrong, more x's than y's")
             exit()
         
-        if len(centroids['x']) >= 3 :
+        if len(centroids['x']) >= 5 :
             centroids['x'] = centroids['x'][-2:] # If the list gets too big, cleans it back to the last 2, which are needed for drawing
             centroids['y'] = centroids['y'][-2:] 
 
         #* ---Drawing---
-        drawingLine(img_gui,centroids,pencil_options)
+        drawingLine(img_gui,centroids,pencil_options,usp)
 
         #* ---Showing biggest object in mask---
 
         #! This is here because cc_masked_camera_image is only relevant inside this fc and didn't want to have it as output
         cv2.imshow("Biggest Object in Mask",cc_masked_camera_image)
+
+def switchOutput(src_img_gui,camera_source_img,switcher):
+   
+    if switcher['counter']:
+        mask = cv2.inRange(src_img_gui,(254,254,254),(255,255,255))
+        camera_source_img[mask==0] = src_img_gui[mask==0]   #! joins the circle and the camera image
 
 
 #-----------
@@ -203,8 +237,10 @@ def main():
     parser.add_argument('-usp','--use_shake_prevention', action='store_true',default = False ,help='Use shake mode : Prevents unintended lines across long distances')
     args = parser.parse_args()
 
-    #* ---Mode selection----
+    #* ---Configuration of variable for flip flop to use with switchOutput function
+    switcher = {'counter': False}
 
+    #* ---Mode selection----
     title_prompt = "Please choose the gamemode : "
     options = ["Normal","Puzzle"]
     option , index = pick.pick(options, title_prompt,indicator="=>")
@@ -230,6 +266,7 @@ def main():
     #* ---Initializing random variables----
     resolution = camera_source_img.shape
     centroids = { 'x' : [], 'y' : []}
+    usp = args.use_shake_prevention
 
 
     #* ---Creating a blank image to drawn on---
@@ -248,7 +285,7 @@ def main():
     
     if puzzle_mode:
          #* ---Calculating a random puzzle matrix---
-        src_puzzle = puzzle.buildPuzzle( (resolution[0],resolution[1]), 4)
+        src_puzzle = puzzle.buildPuzzle( (resolution[0],resolution[1]), 10)
 
          #* ---Sum of all puzzle pixels in 1D---
         num_of_puzzle_pixels = src_puzzle[:,:,0].size#Important to not include the black pixels in the total, also not the letters
@@ -279,9 +316,14 @@ def main():
     else:
         cv2.namedWindow("Drawing")
 
+   #* ---Configuring mouseCallback---
+         #TODO mouseCallback
 
-    #* ---Configuring mouseCallback---
-    #TODO mouseCallback
+    if puzzle_mode:
+        cv2.setMouseCallback("Puzzle",partial(mouseCallback,points = centroids))
+    else:
+        cv2.setMouseCallback("Drawing",partial(mouseCallback,points = centroids))
+  
 
 
     while(1):
@@ -294,10 +336,9 @@ def main():
         masked_camera_image = cv2.inRange(camera_source_img,lower_bound_bgr,upper_bound_bgr) # Matrix of 0's and 255's
 
         #* ---Drawing Core---
-        drawingCore(camera_source_img, masked_camera_image,src_img_gui,centroids,pencil_options)
+        drawingCore(camera_source_img, masked_camera_image,src_img_gui,centroids,pencil_options,usp)
 
         #* ---Puzzle processing---
-        # TODO Figure how to implement this
        
         if puzzle_mode:
             
@@ -337,31 +378,32 @@ def main():
 
             if score < 0:
                 score = 0
-
             print("Your score is ",score," %.")
 
-        #* ---Behavior of keyboard interrupts---
-
-        keyboardActions(pencil_options,src_img_gui)
-
+        keyboardActions(pencil_options,src_img_gui,centroids,switcher)
 
         #-----------------------------
         # Visualization
         #-----------------------------
 
+
+        #* ---Switch the drawing background from whiteboard to camera and vise-versa---
+
+        switchOutput(src_img_gui,camera_source_img,switcher)
+
         #* ---Image showing---
+        
         #// cv2.imshow("Biggest Object in Mask",cc_masked_camera_image) on drawingCore
         cv2.imshow("Camera Source",camera_source_img)
         cv2.imshow("Mask",masked_camera_image)
         
+
         if puzzle_mode :
             cv2.imshow("Puzzle",puzzle_painted)
         else:
             cv2.imshow("Drawing",src_img_gui)
 
 
-
-        
         cv2.moveWindow("Camera Source" ,x = 20,y = 0)
         cv2.moveWindow("Mask" ,x = 20,y = resolution[0])
         cv2.moveWindow("Biggest Object in Mask" ,x = resolution[1]+200 ,y = resolution[0])
