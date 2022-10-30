@@ -64,7 +64,15 @@ def buildPuzzle(res,wanted_lines):
         cv2.line(puzzle_3D, tuple(border_points[i]), tuple(border_points[i+1]), (0,0,0), 3)
 
     #TODO Decide whether this blur is worth staying
-    puzzle_3D = cv2.GaussianBlur(puzzle_3D,(3,3),cv2.BORDER_DEFAULT)
+    # puzzle_3D = cv2.GaussianBlur(puzzle_3D,(3,3),cv2.BORDER_DEFAULT) NO BECAUSE IT CREATES GRAY
+
+    puzzle_3D = cv2.bitwise_not(puzzle_3D)
+
+    kernel = np.ones((1,1), np.uint8)
+    puzzle_3D = cv2.dilate(puzzle_3D, kernel, iterations=1)
+
+    puzzle_3D = cv2.bitwise_not(puzzle_3D)
+
 
     return puzzle_3D
 
@@ -89,9 +97,11 @@ def puzzleZones(puzzle_BGR):
         for img in buffer_list:
             mask_int64 += img
 
-        mask_uint8 = mask_int64.astype(np.uint8)  
+        mask_bool = mask_int64.astype(bool)  
+        # mask_uint8 = mask_int64.astype(np.uint8)  
 
-        return mask_uint8
+        return mask_bool
+        # return mask_uint8
 
     res = puzzle_BGR.shape
     #* Converting BGR to Gray
@@ -119,7 +129,6 @@ def puzzleZones(puzzle_BGR):
     label_list = list(range(1,cc_num_lables))
     random.shuffle(label_list)
     
-    print(cc_num_lables)
     reds,greens,blues = splitList(label_list,3) # Each list contains which label corresponds to each color, in case of mod(len(label_list),3) != 0, the blues will have always 1 more
 
     zones_labels_dict = {'blues':blues, 'greens':greens, 'reds': reds}
@@ -169,4 +178,5 @@ def main():
 
 if __name__ == "__main__":
     main()
+
 
