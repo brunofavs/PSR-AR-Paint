@@ -18,7 +18,7 @@ def drawCircle(white_board, points, options):
             coords['x'],coords['y'] = points['x'][-2],points['y'][-2]
             radius = int(sqrt(((coords['ix'] - coords['x'])**2)+((coords['iy'] - coords['y'])**2)))
             cv2.circle(white_board, (coords['ix'], coords('iy')), radius, options['color'], options['size'])
-
+            cv2.imshow('Drawing', white_board)
     # Collect events until released
     with keyboard.Listener(
             on_press=on_press,

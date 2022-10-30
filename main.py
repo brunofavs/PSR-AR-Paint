@@ -20,6 +20,7 @@ import time
 import pick
 
 import puzzle
+import shapes
 
 from functools import partial
 from copy import deepcopy
@@ -170,8 +171,8 @@ def drawingCore(camera_source_img, masked_camera_image,img_gui,centroids,pencil_
 
         #* ---Drawing a x where the centroid is in the source---
         # TODO For now will just draw a circle
-
-        cv2.circle(camera_source_img,cc_centroid,10,(0,0,255),-1)
+        cv2.drawMarker(camera_source_img, cc_centroid, (0,0,255), 0, 20, 2)
+        #cv2.circle(camera_source_img,cc_centroid,10,(0,0,255),-1)
 
 
         #* ---Storing centroids---
@@ -364,14 +365,18 @@ def main():
 
         keyboardActions(pencil_options,src_img_gui,switcher)
 
-
         #-----------------------------
         # Visualization
         #-----------------------------
 
+
         #* ---Switch the drawing background from whiteboard to camera and vise-versa---
 
         switchOutput(src_img_gui,camera_source_img,switcher)
+
+        #* ---Drawing shapes---
+
+        #shapes.drawCircle(src_img_gui, centroids, options)
 
         #* ---Image showing---
         
