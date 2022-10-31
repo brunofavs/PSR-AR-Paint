@@ -11,6 +11,7 @@
 # Imports
 #-----------
 import argparse
+from curses.textpad import rectangle
 from multiprocessing.connection import wait
 import cv2
 import numpy as np
@@ -20,12 +21,11 @@ import time
 import pick
 
 import puzzle
-import shapes
 
 from functools import partial
 from copy import deepcopy
 from collections import namedtuple
-
+from shapes import drawRectangle
 
 #-----------
 # Global variables
@@ -108,7 +108,7 @@ def drawingLine(white_board,points,options):
     #modifying the inicial image, not changing the original memory adress
     cv2.line(white_board, inicial_point, final_point, options['color'], options['size'])
     
-def keyboardActions(pencil_options,src_img_gui,switcher):
+def keyboardActions(pencil_options,src_img_gui,flip_flop):
     pressed_key = cv2.waitKey(1) & 0xFF # To prevent NumLock issue
     if pressed_key  == ord('q'): 
         print("Quitting program")
@@ -154,13 +154,16 @@ def keyboardActions(pencil_options,src_img_gui,switcher):
         cv2.imwrite(file_name , src_img_gui) #! Caso seja com o video pode ter de se mudar aqui
 
     elif pressed_key == ord('v'):
-        switcher['counter'] = not switcher['counter']
+        flip_flop['switcher'] = not flip_flop['switcher']
+    
+    elif pressed_key == ord('p'):
+        flip_flop['r_counter'] += 1
         
 
 
     #TODO implementar try except para caso não consiga escrever
 
-def drawingCore(camera_source_img, masked_camera_image,img_gui,centroids,pencil_options):
+def drawingCore(camera_source_img, masked_camera_image,img_gui,centroids,pencil_options,coords,flip_flop):
 
         #* ---Filtering the biggest blob in the image---
 
@@ -171,7 +174,7 @@ def drawingCore(camera_source_img, masked_camera_image,img_gui,centroids,pencil_
 
         #* ---Drawing a x where the centroid is in the source---
         # TODO For now will just draw a circle
-        cv2.drawMarker(camera_source_img, cc_centroid, (0,0,255), 0, 20, 2)
+        cv2.drawMarker(camera_source_img, cc_centroid, (0,0,0), 0, 30, 3)
         #cv2.circle(camera_source_img,cc_centroid,10,(0,0,255),-1)
 
 
@@ -188,18 +191,21 @@ def drawingCore(camera_source_img, masked_camera_image,img_gui,centroids,pencil_
             centroids['y'] = centroids['y'][-2:] 
 
         #* ---Drawing---
-        drawingLine(img_gui,centroids,pencil_options)
+        if flip_flop['r_counter'] == 0:
+            drawingLine(img_gui,centroids,pencil_options)
+        else:
+            drawRectangle(img_gui, centroids, coords, pencil_options, flip_flop)
         #* ---Showing biggest object in mask---
 
         #! This is here because cc_masked_camera_image is only relevant inside this fc and didn't want to have it as output
         cv2.imshow("Biggest Object in Mask",cc_masked_camera_image)
 
-def switchOutput(src_img_gui,camera_source_img,switcher):
+def switchOutput(src_img_gui,camera_source_img,flip_flop):
    
     mask = cv2.inRange(src_img_gui,(254,254,254),(255,255,255))
 
-    if switcher['counter']:
-        camera_source_img[mask==0] = src_img_gui[mask==0]   #! joins the circle and the camera image
+    if flip_flop['switcher']:
+        camera_source_img[mask == 0] = src_img_gui[mask == 0]   #! joins the circle and the camera image
 
 
 #-----------
@@ -218,8 +224,8 @@ def main():
     args = parser.parse_args()
 
     #* ---Configuration of variable for flip flop to use with switchOutput function
-    switcher = {'counter': False}
-
+    flip_flop = {'switcher': False, 'r_counter': 0}
+    coords={'ipoints': (0,0), 'fpoints':(0,0)}
     #* ---Mode selection----
 
     title_prompt = "Please choose the gamemode : "
@@ -311,7 +317,7 @@ def main():
         masked_camera_image = cv2.inRange(camera_source_img,lower_bound_bgr,upper_bound_bgr) # Matrix of 0's and 255's
 
         #* ---Drawing Core---
-        drawingCore(camera_source_img, masked_camera_image,src_img_gui,centroids,pencil_options)
+        drawingCore(camera_source_img, masked_camera_image,src_img_gui,centroids,pencil_options,coords,flip_flop)
 
         #* ---Puzzle processing---
         # TODO Figure how to implement this
@@ -363,7 +369,7 @@ def main():
 
         #* ---Behavior of keyboard interrupts---
 
-        keyboardActions(pencil_options,src_img_gui,switcher)
+        keyboardActions(pencil_options,src_img_gui,flip_flop)
 
         #-----------------------------
         # Visualization
@@ -372,11 +378,7 @@ def main():
 
         #* ---Switch the drawing background from whiteboard to camera and vise-versa---
 
-        switchOutput(src_img_gui,camera_source_img,switcher)
-
-        #* ---Drawing shapes---
-
-        #shapes.drawCircle(src_img_gui, centroids, options)
+        switchOutput(src_img_gui,camera_source_img,flip_flop)
 
         #* ---Image showing---
         
