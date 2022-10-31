@@ -215,6 +215,7 @@ def drawingCore(camera_source_img, masked_camera_image,img_gui,centroids,pencil_
             drawingLine(img_gui,centroids,pencil_options,usp)
         else:
             drawRectangle(img_gui, centroids, coords, pencil_options, flip_flop)
+
         #* ---Showing biggest object in mask---
 
         #! This is here because cc_masked_camera_image is only relevant inside this fc and didn't want to have it as output
