@@ -2,17 +2,9 @@
 
 import cv2
 
-def drawRectangle(whiteboard, points, coords, options, flip_flop):
-    
-    coords['fpoints'] = (points['x'][-2],points['y'][-2] )
+def drawRectangle(whiteboard, points, options, shape_points):
 
-    if flip_flop['r_counter'] == 1:
-        coords['ipoints'] = (points['x'][-2],points['y'][-2] )
-        print(coords['ipoints'])
-        cv2.rectangle(whiteboard,coords['ipoints'], coords['fpoints'], options['color'], options['size'])
-        flip_flop['r_counter'] += 1
-
-    elif flip_flop['r_counter'] == 3:
-        print(coords['fpoints'])
-        cv2.rectangle(whiteboard,coords['ipoints'], coords['fpoints'], options['color'], options['size'])
-        flip_flop['r_counter'] = 0
+    shape_points['fpoints'] = (points['x'][-2],points['y'][-2] )
+    copy = whiteboard.copy()
+    cv2.rectangle(copy, shape_points['ipoints'], shape_points['fpoints'], options['color'], options['size'])
+    cv2.imshow('Drawing', copy)

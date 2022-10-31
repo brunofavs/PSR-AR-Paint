@@ -125,7 +125,7 @@ def drawingLine(white_board,points,options,usp):
     #modifying the inicial image, not changing the original memory adress
     cv2.line(white_board, inicial_point, final_point, options['color'], options['size'])
     
-def keyboardActions(pencil_options,src_img_gui,centroids,flip_flop):
+def keyboardActions(pencil_options,src_img_gui,centroids,flip_flop, shape_points):
     pressed_key = cv2.waitKey(1) & 0xFF # To prevent NumLock issue
     if pressed_key  == ord('q'): 
         print("Quitting program")
@@ -176,13 +176,13 @@ def keyboardActions(pencil_options,src_img_gui,centroids,flip_flop):
         flip_flop['switcher'] = not flip_flop['switcher']
     
     elif pressed_key == ord('p'):
-        flip_flop['r_counter'] += 1
+        shape_points['ipoints'] = (centroids['x'][-2],centroids['y'][-2] )
+        flip_flop['r_counter'] = not flip_flop['r_counter']
         
-
 
     #TODO implementar try except para caso não consiga escrever
 
-def drawingCore(camera_source_img, masked_camera_image,img_gui,centroids,pencil_options,usp,coords,flip_flop):
+def drawingCore(camera_source_img, masked_camera_image,img_gui,centroids,pencil_options,usp,flip_flop,shape_points):
 
         #* ---Filtering the biggest blob in the image---
 
@@ -211,11 +211,10 @@ def drawingCore(camera_source_img, masked_camera_image,img_gui,centroids,pencil_
             centroids['y'] = centroids['y'][-2:] 
 
         #* ---Drawing---
-        if flip_flop['r_counter'] == 0:
+        if flip_flop['r_counter'] == False:
             drawingLine(img_gui,centroids,pencil_options,usp)
         else:
-            drawRectangle(img_gui, centroids, coords, pencil_options, flip_flop)
-
+            drawRectangle(img_gui, centroids, pencil_options, shape_points)
         #* ---Showing biggest object in mask---
 
         #! This is here because cc_masked_camera_image is only relevant inside this fc and didn't want to have it as output
@@ -226,7 +225,6 @@ def switchOutput(src_img_gui,camera_source_img,flip_flop):
     if flip_flop['switcher']:
         mask = cv2.inRange(src_img_gui,(254,254,254),(255,255,255))
         camera_source_img[mask==0] = src_img_gui[mask==0]   #! joins the circle and the camera image
-
 
 #-----------
 # Main
@@ -244,8 +242,8 @@ def main():
     args = parser.parse_args()
 
     #* ---Configuration of variable for flip flop to use with switchOutput function
-    flip_flop = {'switcher': False, 'r_counter': 0}
-    coords={'ipoints': (0,0), 'fpoints':(0,0)}
+    flip_flop = {'switcher': False, 'r_counter': False}
+    shape_points = {'ipoints': (0,0), 'fpoints': (0,0)}
     #* ---Mode selection----
     title_prompt = "Please choose the gamemode : "
     options = ["Normal","Puzzle"]
@@ -342,7 +340,7 @@ def main():
         masked_camera_image = cv2.inRange(camera_source_img,lower_bound_bgr,upper_bound_bgr) # Matrix of 0's and 255's
 
         #* ---Drawing Core---
-        drawingCore(camera_source_img, masked_camera_image,src_img_gui,centroids,pencil_options,usp,coords,flip_flop)
+        drawingCore(camera_source_img, masked_camera_image,src_img_gui,centroids,pencil_options,usp,flip_flop,shape_points)
 
         #* ---Puzzle processing---
        
@@ -386,7 +384,7 @@ def main():
                 score = 0
             print("Your score is ",score," %.")
 
-        keyboardActions(pencil_options,src_img_gui,centroids,flip_flop)
+        keyboardActions(pencil_options,src_img_gui,centroids,flip_flop,shape_points)
 
         #-----------------------------
         # Visualization
