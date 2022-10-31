@@ -24,7 +24,7 @@ import puzzle
 from functools import partial
 from copy import deepcopy
 from collections import namedtuple
-from shapes import drawRectangle
+from shapes import drawRectangle, drawCircle, drawEllipse
 
 #-----------
 # Global variables
@@ -178,7 +178,14 @@ def keyboardActions(pencil_options,src_img_gui,centroids,flip_flop, shape_points
     elif pressed_key == ord('p'):
         shape_points['ipoints'] = (centroids['x'][-2],centroids['y'][-2] )
         flip_flop['r_counter'] = not flip_flop['r_counter']
+    
+    elif pressed_key == ord('o'):
+        shape_points['ipoints'] = (centroids['x'][-2],centroids['y'][-2] )
+        flip_flop['c_counter'] = not flip_flop['c_counter']
         
+    elif pressed_key == ord('e'):
+        shape_points['ipoints'] = (centroids['x'][-2],centroids['y'][-2] )
+        flip_flop['e_counter'] = not flip_flop['e_counter']
 
     #TODO implementar try except para caso não consiga escrever
 
@@ -211,10 +218,15 @@ def drawingCore(camera_source_img, masked_camera_image,img_gui,centroids,pencil_
             centroids['y'] = centroids['y'][-2:] 
 
         #* ---Drawing---
-        if flip_flop['r_counter'] == False:
-            drawingLine(img_gui,centroids,pencil_options,usp)
-        else:
+        if flip_flop['r_counter']:
             drawRectangle(img_gui, centroids, pencil_options, shape_points)
+        elif flip_flop['c_counter']:
+            drawCircle(img_gui, centroids, pencil_options, shape_points)
+        elif flip_flop['e_counter']:
+            drawEllipse(img_gui, centroids, pencil_options, shape_points)
+        else:
+            drawingLine(img_gui,centroids,pencil_options,usp)
+            
         #* ---Showing biggest object in mask---
 
         #! This is here because cc_masked_camera_image is only relevant inside this fc and didn't want to have it as output
@@ -242,7 +254,7 @@ def main():
     args = parser.parse_args()
 
     #* ---Configuration of variable for flip flop to use with switchOutput function
-    flip_flop = {'switcher': False, 'r_counter': False}
+    flip_flop = {'switcher': False, 'r_counter': False, 'e_counter': False, 'c_counter': False}
     shape_points = {'ipoints': (0,0), 'fpoints': (0,0)}
     #* ---Mode selection----
     title_prompt = "Please choose the gamemode : "
