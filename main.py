@@ -179,16 +179,16 @@ def keyboardActions(pencil_options,src_img_gui,centroids,flip_flop, shape_points
         flip_flop['r_counter'] += 1
         if flip_flop['r_counter'] == 1:
             shape_points['ipoints'] = (centroids['x'][-2],centroids['y'][-2] )
-        
     
     elif pressed_key == ord('o'):
-        shape_points['ipoints'] = (centroids['x'][-2],centroids['y'][-2] )
-        flip_flop['c_counter'] = not flip_flop['c_counter']
-        
-        
+        flip_flop['c_counter'] += 1
+        if flip_flop['c_counter'] == 1:
+            shape_points['ipoints'] = (centroids['x'][-2],centroids['y'][-2] )
+           
     elif pressed_key == ord('e'):
-        shape_points['ipoints'] = (centroids['x'][-2],centroids['y'][-2] )
-        flip_flop['e_counter'] = not flip_flop['e_counter']
+        flip_flop['e_counter'] += 1
+        if flip_flop['e_counter'] == 1:
+            shape_points['ipoints'] = (centroids['x'][-2],centroids['y'][-2] )
 
     #TODO implementar try except para caso não consiga escrever
 
@@ -221,12 +221,12 @@ def drawingCore(camera_source_img, masked_camera_image,img_gui,centroids,pencil_
             centroids['y'] = centroids['y'][-2:] 
 
         #* ---Drawing---
-        if flip_flop['r_counter'] == 1 or flip_flop['r_counter'] == 2:
+        if flip_flop['r_counter'] != 0:
             drawRectangle(img_gui, centroids, pencil_options, shape_points, flip_flop)
-        elif flip_flop['c_counter']:
-            drawCircle(img_gui, centroids, pencil_options, shape_points)
-        elif flip_flop['e_counter']:
-            drawEllipse(img_gui, centroids, pencil_options, shape_points)
+        elif flip_flop['c_counter'] != 0:
+            drawCircle(img_gui, centroids, pencil_options, shape_points, flip_flop)
+        elif flip_flop['e_counter'] != 0:
+            drawEllipse(img_gui, centroids, pencil_options, shape_points, flip_flop)
         else:
             drawingLine(img_gui,centroids,pencil_options,usp)
             
@@ -257,7 +257,7 @@ def main():
     args = parser.parse_args()
 
     #* ---Configuration of variable for flip flop to use with switchOutput function
-    flip_flop = {'switcher': False, 'r_counter': False, 'e_counter': False, 'c_counter': False}
+    flip_flop = {'switcher': False, 'r_counter': 0, 'e_counter': 0, 'c_counter': 0}
     shape_points = {'ipoints': (0,0), 'fpoints': (0,0)}
     #* ---Mode selection----
     title_prompt = "Please choose the gamemode : "

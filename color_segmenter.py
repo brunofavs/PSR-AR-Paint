@@ -96,6 +96,8 @@ def main():
         image_mask = cv2.inRange(source_image_bgr, lower_bound_bgr, upper_bound_bgr)
         cv2.imshow('Segmentation',image_mask)
 
+        cv2.moveWindow('Segmentation', 700, 0 )
+
         pressed_key = cv2.waitKey(1) & 0xFF
 
         if pressed_key  == ord('w'): #NUMLOCK ISSUE ms delay
