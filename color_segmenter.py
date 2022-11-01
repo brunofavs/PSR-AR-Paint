@@ -30,6 +30,62 @@ def onTrackbar(x , dict ,red_min = False,red_max = False,green_min = False,green
     if red_max == True:
         dict['limits']['R']['max'] = x
 
+#-----------------------------
+# mousecall to get color 
+#-----------------------------
+def mouse_BGR(event, x, y, flags, params,source_image):
+    if event == cv2.EVENT_LBUTTONDOWN:
+
+        colorsB = source_image[y,x,0]
+        colorsG = source_image[y,x,1]
+        colorsR = source_image[y,x,2]
+        color =  [colorsB,colorsG,colorsR]
+
+        #-----------------------------
+        # Blue
+        #-----------------------------
+        try:
+            cv2.setTrackbarPos("Blue_Min","Segmentation",color[0]-15)
+        except:
+            cv2.setTrackbarPos("Blue_Min","Segmentation",0)
+
+        try:        
+            cv2.setTrackbarPos("Blue_Max","Segmentation",color[0]+15)
+        except:
+            cv2.setTrackbarPos("Blue_Max","Segmentation",255)
+            
+        #-----------------------------
+        # Green
+        #-----------------------------
+        try:
+            cv2.setTrackbarPos("Green_Min","Segmentation",color[1]-15)
+        except:
+            cv2.setTrackbarPos("Green_Min","Segmentation",0)
+
+        try:        
+            cv2.setTrackbarPos("Green_Max","Segmentation",color[1]+15)
+        except:
+            cv2.setTrackbarPos("Green_Max","Segmentation",255)
+
+        #-----------------------------
+        # Red
+        #-----------------------------
+        try:
+            cv2.setTrackbarPos("Red_Min","Segmentation",color[2]-15)
+        except:
+            cv2.setTrackbarPos("Red_Min","Segmentation",0)
+
+        try:        
+            cv2.setTrackbarPos("Red_Max","Segmentation",color[2]+15)
+        except:
+            cv2.setTrackbarPos("Red_Max","Segmentation",255)
+
+
+            
+
+        print("BGR Format: ", color)
+        print("coordinate of pixel: X: ",x, "Y: ",y)
+
 def main():
 #-----------------------------
 # Initialization
@@ -81,12 +137,12 @@ def main():
     cv2.createTrackbar("Red_Max","Segmentation",limitsDict['limits']['R']['max'],255,partial(onTrackbar, red_max = True, dict = limitsDict) )
 
 
-
     while(1):
 
         _,source_image_bgr = capture_object.read()
         source_image_bgr = cv2.flip(source_image_bgr,1)
         
+        cv2.setMouseCallback("Source", partial(mouse_BGR, source_image = source_image_bgr))
         
         cv2.imshow('Source',source_image_bgr)
 
@@ -112,29 +168,12 @@ def main():
     
 
 
-    #-----------------------------
-    # mousecall to get color 
-    #-----------------------------
-    def mouse_BGR(event, x, y, flags, params):
-        if event == cv2.EVENT_LBUTTONDOWN:
-            colorB = source_image_bgr[y,x,0]
-            colorG = source_image_bgr[y,x,1]
-            colorR = source_image_bgr[y,x,2]
-            color = source_image_bgr[x,y]
-            print("red: ", colorR)
-            print("green: ", colorG)
-            print("Blue: ", colorB)
-            print("BGR Format: ", color)
-            print("coordinate of pixel: X: ",x, "Y: ",y)
-
-
     cv2.namedWindow("Source",cv2.WINDOW_AUTOSIZE);
     cv2.imshow("Source",source_image_bgr)
 
     #cv2.namedWindow('mouseBGR')
-    cv2.setMouseCallback('mouseBGR', mouse_BGR)
 
-    #cv2.imshow('mouseBGR', source_image_bgr)
+    #cv2.imshow('mouseBGR', source_image_bgr_flipped)
 
     
 
