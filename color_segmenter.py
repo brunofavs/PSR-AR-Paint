@@ -91,15 +91,20 @@ def main():
 # Initialization
 #-----------------------------
     parser = argparse.ArgumentParser(description='Video color segmenting') 
+    parser.add_argument('-j','--json',type=str,required=True,help='Absolute path for json file with color thresholds') 
+    args = parser.parse_args()
 
-    #Inicial values just to show the image inicially
-    # limitsDict ={'limits' : { 'B':{ 'max' : 100 , 'min' : 70 },
-    #                           'G':{ 'max' : 120 , 'min' : 90 },
-    #                           'R':{ 'max' : 150 , 'min' : 100 } } }
+    try:
+        json_object = open(args.json)
+        limitsDict = json.load(json_object)
+    except:
+        print("No json file found to read, starting calibration with default values")
+        limitsDict ={'limits' : { 'B':{ 'max' : 100 , 'min' : 70 },
+                                  'G':{ 'max' : 120 , 'min' : 90 },
+                                  'R':{ 'max' : 150 , 'min' : 100 } } }
+    else:
+        print("Json file read successfuly, reading starting values for calibration")
 
-    json_object = open("limits.json")
-
-    limitsDict = json.load(json_object)
 
     upper_bound_bgr = np.array([limitsDict['limits']['B']['max'], limitsDict['limits']['G']['max'], limitsDict['limits']['R']['max']] )
     lower_bound_bgr = np.array([limitsDict['limits']['B']['min'], limitsDict['limits']['G']['min'], limitsDict['limits']['R']['min']] )
