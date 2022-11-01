@@ -176,12 +176,15 @@ def keyboardActions(pencil_options,src_img_gui,centroids,flip_flop, shape_points
         flip_flop['switcher'] = not flip_flop['switcher']
     
     elif pressed_key == ord('p'):
-        shape_points['ipoints'] = (centroids['x'][-2],centroids['y'][-2] )
-        flip_flop['r_counter'] = not flip_flop['r_counter']
+        flip_flop['r_counter'] += 1
+        if flip_flop['r_counter'] == 1:
+            shape_points['ipoints'] = (centroids['x'][-2],centroids['y'][-2] )
+        
     
     elif pressed_key == ord('o'):
         shape_points['ipoints'] = (centroids['x'][-2],centroids['y'][-2] )
         flip_flop['c_counter'] = not flip_flop['c_counter']
+        
         
     elif pressed_key == ord('e'):
         shape_points['ipoints'] = (centroids['x'][-2],centroids['y'][-2] )
@@ -218,8 +221,8 @@ def drawingCore(camera_source_img, masked_camera_image,img_gui,centroids,pencil_
             centroids['y'] = centroids['y'][-2:] 
 
         #* ---Drawing---
-        if flip_flop['r_counter']:
-            drawRectangle(img_gui, centroids, pencil_options, shape_points)
+        if flip_flop['r_counter'] == 1 or flip_flop['r_counter'] == 2:
+            drawRectangle(img_gui, centroids, pencil_options, shape_points, flip_flop)
         elif flip_flop['c_counter']:
             drawCircle(img_gui, centroids, pencil_options, shape_points)
         elif flip_flop['e_counter']:
@@ -343,7 +346,7 @@ def main():
 
 
     while(1):
-
+        
         #* ---Camera source image processing---
         _,camera_source_img = capture_object.read()
         camera_source_img = cv2.flip(camera_source_img,1) # Flip image on x-axis
