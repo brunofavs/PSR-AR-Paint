@@ -1,8 +1,10 @@
 import cv2
 from math import sqrt
 
+#! ------------------------ ADD COMMENTS TO THE FINAL VERSION ------------------------
 
 def drawRectangle(whiteboard, points, options, shape_points, flip_flop):
+ 
     copy = whiteboard.copy()
 
     shape_points['fpoints'] = (points['x'][-2],points['y'][-2] )
@@ -14,7 +16,9 @@ def drawRectangle(whiteboard, points, options, shape_points, flip_flop):
         cv2.rectangle(whiteboard, shape_points['ipoints'], shape_points['fpoints'], options['color'], options['size'])
         flip_flop['r_counter'] = 0
 
+
 def drawCircle(whiteboard, points, options, shape_points, flip_flop):
+    
     copy = whiteboard.copy()
 
     shape_points['fpoints'] = (points['x'][-2],points['y'][-2] )
@@ -27,7 +31,9 @@ def drawCircle(whiteboard, points, options, shape_points, flip_flop):
         cv2.circle(whiteboard, shape_points['ipoints'], radius, options['color'], options['size'])
         flip_flop['c_counter'] = 0
 
+
 def drawEllipse(whiteboard, points, options, shape_points, flip_flop):
+    
     copy = whiteboard.copy()
 
     shape_points['fpoints'] = (points['x'][-2],points['y'][-2] )
@@ -40,6 +46,3 @@ def drawEllipse(whiteboard, points, options, shape_points, flip_flop):
     if flip_flop['e_counter'] == 2:
         cv2.ellipse(whiteboard, center_point, axes, 0, 0, 360, options['color'], options['size'])
         flip_flop['e_counter'] = 0
-
-
-
