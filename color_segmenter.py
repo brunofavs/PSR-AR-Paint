@@ -35,9 +35,11 @@ def main():
 # Initialization
 #-----------------------------
     parser = argparse.ArgumentParser(description='Video color segmenting') 
+    parser.add_argument('-j','--json',type=str,required=True,help='Absolute path for json file with color thresholds') 
+    args = parser.parse_args()
 
     try:
-        json_object = open("limits.json")
+        json_object = open(args.json)
         limitsDict = json.load(json_object)
     except:
         print("No json file found to read, starting calibration with default values")
