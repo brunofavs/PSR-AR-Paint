@@ -80,6 +80,8 @@ def main():
     cv2.createTrackbar("Red_Min","Segmentation",limitsDict['limits']['R']['min'],255,partial(onTrackbar, red_min = True, dict = limitsDict) )
     cv2.createTrackbar("Red_Max","Segmentation",limitsDict['limits']['R']['max'],255,partial(onTrackbar, red_max = True, dict = limitsDict) )
 
+
+
     while(1):
 
         _,source_image_bgr = capture_object.read()
@@ -125,11 +127,28 @@ def main():
             print("BGR Format: ", color)
             print("coordinate of pixel: X: ",x, "Y: ",y)
 
-    
-    cv2.namedWindow('mouseBGR')
-    cv2.setMouseCallback('MOuseBGR', source_image_bgr)
 
-    cv2.imshow('mouseBGR', source_image_bgr)
+    cv2.namedWindow("Source",cv2.WINDOW_AUTOSIZE);
+    cv2.imshow("Source",source_image_bgr)
+
+    #cv2.namedWindow('mouseBGR')
+    cv2.setMouseCallback('mouseBGR', mouse_BGR)
+
+    #cv2.imshow('mouseBGR', source_image_bgr)
+
+    
+
+    while(True):
+
+        _, source_image_bgr = capture_object.read()
+
+        cv2.imshow('mouseRGB', source_image_bgr)
+
+        if cv2.waitKey(1) == 27:
+            break
+
+    capture_object.release()
+    cv2.destroyAllWindows()
 
 
 
