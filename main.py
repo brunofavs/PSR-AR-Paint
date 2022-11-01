@@ -32,6 +32,8 @@ from collections import namedtuple
 centroid_tuple = namedtuple('centroid_tuple',['x','y']) # No point in being a dictionary as I dont ever want to change the coordinates of the centroid
 # First is the object name, the str is whats shown when printed
 
+usp_sensitivity = 100 # Used a global because usp is in a nested function
+
 #-----------
 # Functions
 #-----------
@@ -114,7 +116,7 @@ def drawingLine(white_board,points,options,usp):
     #* ---Checking whether distance is good if ups----
     if usp: 
         distance = round(sqrt((inicial_point[0]-final_point[0])**2+(inicial_point[1]-final_point[1])**2))
-        if distance > 100:
+        if distance > usp_sensitivity:
             cv2.circle(white_board, (points['x'][-1],points['y'][-1]) , options['size'] //2 ,options['color'], -1)
             return
 
@@ -229,6 +231,7 @@ def main():
     #-----------------------------
     # Initialization
     #-----------------------------
+    global usp_sensitivity
 
     #* ---Configuration of argparse----
     parser = argparse.ArgumentParser(description='AR paint') 
@@ -253,6 +256,25 @@ def main():
         puzzle_mode = True
     else:
         return 
+
+    #* ---Difficulty----
+
+    if puzzle_mode:
+
+        title_difficulty = "Please choose your difficulty : "
+        difficulties = ["Easy","Normal","Hard","INSANE"]
+        chosen_dificulty, index = pick.pick(difficulties, title_difficulty,indicator="=>")
+
+        if  index == 0:
+            number_of_lines = 3
+        elif index == 1:
+            number_of_lines = 4
+        elif index == 2:
+            number_of_lines = 7
+        elif index == 3:
+            number_of_lines = 11
+        else:
+            return 
 
     #* ---Loading json file into memory----
     json_inicial_object = open(args.json)
@@ -284,7 +306,7 @@ def main():
     
     if puzzle_mode:
          #* ---Calculating a random puzzle matrix---
-        src_puzzle = puzzle.buildPuzzle( (resolution[0],resolution[1]), 10)
+        src_puzzle = puzzle.buildPuzzle( (resolution[0],resolution[1]), number_of_lines)
 
          #* ---Sum of all puzzle pixels in 1D---
         num_of_puzzle_pixels = src_puzzle[:,:,0].size#Important to not include the black pixels in the total, also not the letters
@@ -322,10 +344,25 @@ def main():
         cv2.setMouseCallback("Puzzle",partial(mouseCallback,points = centroids))
     else:
         cv2.setMouseCallback("Drawing",partial(mouseCallback,points = centroids))
-  
 
+   #* ---Adding trackbar to change usp sensibility if on---
 
+    if usp:
+        if puzzle_mode:
+            cv2.createTrackbar("Usp_sensibility","Puzzle",usp_sensitivity,400,lambda x:x)
+        elif normal_mode:
+            cv2.createTrackbar("Usp_sensibility","Drawing",usp_sensitivity,400,lambda x:x)
+
+   
     while(1):
+        #* ---Updating usp sensibility---
+
+        
+        if puzzle_mode:
+            usp_sensitivity = cv2.getTrackbarPos("Usp_sensibility","Puzzle")
+        elif normal_mode:
+            usp_sensitivity = cv2.getTrackbarPos("Usp_sensibility","Drawing")
+
 
         #* ---Camera source image processing---
         _,camera_source_img = capture_object.read()
@@ -374,6 +411,9 @@ def main():
             # print('numertator is',score_numerator)
             # print(num_of_puzzle_pixels)
             score = int((score_numerator/num_of_puzzle_pixels)*100)
+
+
+            
 
             if score < 0:
                 score = 0
