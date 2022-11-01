@@ -109,6 +109,31 @@ def main():
             exit(0)
     
 
+
+    #-----------------------------
+    # mousecall to get color 
+    #-----------------------------
+    def mouse_BGR(event, x, y, flags, params):
+        if event == cv2.EVENT_LBUTTONDOWN:
+            colorB = source_image_bgr[y,x,0]
+            colorG = source_image_bgr[y,x,1]
+            colorR = source_image_bgr[y,x,2]
+            color = source_image_bgr[x,y]
+            print("red: ", colorR)
+            print("green: ", colorG)
+            print("Blue: ", colorB)
+            print("BGR Format: ", color)
+            print("coordinate of pixel: X: ",x, "Y: ",y)
+
+    
+    cv2.namedWindow('mouseBGR')
+    cv2.setMouseCallback('MOuseBGR', source_image_bgr)
+
+    cv2.imshow('mouseBGR', source_image_bgr)
+
+
+
+   
     #-----------------------------
     # Termination
     #-----------------------------
