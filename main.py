@@ -25,6 +25,7 @@ from functools import partial
 from copy import deepcopy
 from collections import namedtuple
 
+
 #-----------
 # Global variables
 #-----------
@@ -124,7 +125,7 @@ def drawingLine(white_board,points,options,usp):
     #modifying the inicial image, not changing the original memory adress
     cv2.line(white_board, inicial_point, final_point, options['color'], options['size'])
     
-def keyboardActions(pencil_options,src_img_gui,centroids):
+def keyboardActions(pencil_options,src_img_gui,centroids,switcher):
     pressed_key = cv2.waitKey(1) & 0xFF # To prevent NumLock issue
     if pressed_key  == ord('q'): 
         print("Quitting program")
@@ -171,6 +172,11 @@ def keyboardActions(pencil_options,src_img_gui,centroids):
         print("Saving png image as " + file_name)
         cv2.imwrite(file_name , src_img_gui) #! Caso seja com o video pode ter de se mudar aqui
 
+    elif pressed_key == ord('v'):
+        switcher['counter'] = not switcher['counter']
+        
+
+
     #TODO implementar try except para caso não consiga escrever
 
 def drawingCore(camera_source_img, masked_camera_image,img_gui,centroids,pencil_options,usp):
@@ -183,8 +189,8 @@ def drawingCore(camera_source_img, masked_camera_image,img_gui,centroids,pencil_
 
         #* ---Drawing a x where the centroid is in the source---
         # TODO For now will just draw a circle
-
-        cv2.circle(camera_source_img,cc_centroid,10,(0,0,255),-1)
+        cv2.drawMarker(camera_source_img, cc_centroid, (0,0,255), 0, 20, 2)
+        #cv2.circle(camera_source_img,cc_centroid,10,(0,0,255),-1)
 
 
         #* ---Storing centroids---
@@ -209,6 +215,12 @@ def drawingCore(camera_source_img, masked_camera_image,img_gui,centroids,pencil_
         #! This is here because cc_masked_camera_image is only relevant inside this fc and didn't want to have it as output
         cv2.imshow("Biggest Object in Mask",cc_masked_camera_image)
 
+def switchOutput(src_img_gui,camera_source_img,switcher):
+   
+    if switcher['counter']:
+        mask = cv2.inRange(src_img_gui,(254,254,254),(255,255,255))
+        camera_source_img[mask==0] = src_img_gui[mask==0]   #! joins the circle and the camera image
+
 
 #-----------
 # Main
@@ -224,6 +236,9 @@ def main():
     parser.add_argument('-j','--json',type=str,required=True,help='Absolute path for json file with color thresholds') 
     parser.add_argument('-usp','--use_shake_prevention', action='store_true',default = False ,help='Use shake mode : Prevents unintended lines across long distances')
     args = parser.parse_args()
+
+    #* ---Configuration of variable for flip flop to use with switchOutput function
+    switcher = {'counter': False}
 
     #* ---Mode selection----
     title_prompt = "Please choose the gamemode : "
@@ -365,20 +380,24 @@ def main():
                 score = 0
             print("Your score is ",score," %.")
 
-        #* ---Behavior of keyboard interrupts---
-
-        keyboardActions(pencil_options,src_img_gui,centroids)
-
+        keyboardActions(pencil_options,src_img_gui,centroids,switcher)
 
         #-----------------------------
         # Visualization
         #-----------------------------
 
+
+        #* ---Switch the drawing background from whiteboard to camera and vise-versa---
+
+        switchOutput(src_img_gui,camera_source_img,switcher)
+
         #* ---Image showing---
+        
         #// cv2.imshow("Biggest Object in Mask",cc_masked_camera_image) on drawingCore
         cv2.imshow("Camera Source",camera_source_img)
         cv2.imshow("Mask",masked_camera_image)
         
+
         if puzzle_mode :
             cv2.imshow("Puzzle",puzzle_painted)
         else:
