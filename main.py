@@ -23,6 +23,7 @@ import puzzle
 from functools import partial
 from copy import deepcopy
 from collections import namedtuple
+from shapes import drawRectangle, drawCircle, drawEllipse
 
 
 #-----------
@@ -126,7 +127,7 @@ def drawingLine(white_board,points,options,usp):
     #modifying the inicial image, not changing the original memory adress
     cv2.line(white_board, inicial_point, final_point, options['color'], options['size'])
     
-def keyboardActions(pencil_options,src_img_gui,centroids,switcher):
+def keyboardActions(pencil_options,src_img_gui,centroids,flip_flop, shape_points):
     pressed_key = cv2.waitKey(1) & 0xFF # To prevent NumLock issue
     if pressed_key  == ord('q'): 
         print("Quitting program")
@@ -174,13 +175,35 @@ def keyboardActions(pencil_options,src_img_gui,centroids,switcher):
         cv2.imwrite(file_name , src_img_gui) #! Caso seja com o video pode ter de se mudar aqui
 
     elif pressed_key == ord('v'):
-        switcher['counter'] = not switcher['counter']
-        
+        flip_flop['switcher'] = not flip_flop['switcher']
+    
+    elif pressed_key == ord('p'):
 
+        if len(centroids['x']) >= 2 :
+            flip_flop['r_counter'] += 1
+
+            if flip_flop['r_counter'] == 1:
+                shape_points['ipoints'] = (centroids['x'][-2],centroids['y'][-2] )
+    
+    elif pressed_key == ord('o'):
+
+        if len(centroids['x']) >= 2 :
+            flip_flop['c_counter'] += 1
+
+            if flip_flop['c_counter'] == 1:
+                shape_points['ipoints'] = (centroids['x'][-2],centroids['y'][-2] )
+           
+    elif pressed_key == ord('e'):
+
+        if len(centroids['x']) >= 2 :
+            flip_flop['e_counter'] += 1
+
+            if flip_flop['e_counter'] == 1:
+                shape_points['ipoints'] = (centroids['x'][-2],centroids['y'][-2] )
 
     #TODO implementar try except para caso não consiga escrever
 
-def drawingCore(camera_source_img, masked_camera_image,img_gui,centroids,pencil_options,usp):
+def drawingCore(camera_source_img, masked_camera_image,img_gui,centroids,pencil_options,usp,flip_flop,shape_points,puzzle_mode,puzzle_img):
 
         #* ---Filtering the biggest blob in the image---
 
@@ -190,7 +213,7 @@ def drawingCore(camera_source_img, masked_camera_image,img_gui,centroids,pencil_
 
         #* ---Drawing a x where the centroid is in the source---
         # TODO For now will just draw a circle
-        cv2.drawMarker(camera_source_img, cc_centroid, (0,0,255), 0, 20, 2)
+        cv2.drawMarker(camera_source_img, cc_centroid, (0,0,0), 0, 30, 3)
         #cv2.circle(camera_source_img,cc_centroid,10,(0,0,255),-1)
 
 
@@ -208,20 +231,35 @@ def drawingCore(camera_source_img, masked_camera_image,img_gui,centroids,pencil_
             centroids['x'] = centroids['x'][-2:] # If the list gets too big, cleans it back to the last 2, which are needed for drawing
             centroids['y'] = centroids['y'][-2:] 
 
-        #* ---Drawing---
-        drawingLine(img_gui,centroids,pencil_options,usp)
+        #* ---Selecting which image to pass on to shapes drawing---
 
+        if puzzle_mode:
+            shape_copy_img = puzzle_img
+        else:
+            shape_copy_img = img_gui
+
+        
+
+        #* ---Drawing---
+        if flip_flop['r_counter'] != 0:
+            drawRectangle(shape_copy_img, centroids, pencil_options, shape_points, flip_flop,puzzle_mode)
+        elif flip_flop['c_counter'] != 0:
+            drawCircle(shape_copy_img, centroids, pencil_options, shape_points, flip_flop,puzzle_mode)
+        elif flip_flop['e_counter'] != 0:
+            drawEllipse(shape_copy_img, centroids, pencil_options, shape_points, flip_flop,puzzle_mode)
+        else:
+            drawingLine(img_gui,centroids,pencil_options,usp)
+            
         #* ---Showing biggest object in mask---
 
         #! This is here because cc_masked_camera_image is only relevant inside this fc and didn't want to have it as output
         cv2.imshow("Biggest Object in Mask",cc_masked_camera_image)
 
-def switchOutput(src_img_gui,camera_source_img,switcher):
+def switchOutput(src_img_gui,camera_source_img,flip_flop):
    
-    if switcher['counter']:
+    if flip_flop['switcher']:
         mask = cv2.inRange(src_img_gui,(254,254,254),(255,255,255))
         camera_source_img[mask==0] = src_img_gui[mask==0]   #! joins the circle and the camera image
-
 
 #-----------
 # Main
@@ -240,8 +278,8 @@ def main():
     args = parser.parse_args()
 
     #* ---Configuration of variable for flip flop to use with switchOutput function
-    switcher = {'counter': False}
-
+    flip_flop = {'switcher': False, 'r_counter': 0, 'e_counter': 0, 'c_counter': 0}
+    shape_points = {'ipoints': (0,0), 'fpoints': (0,0)}
     #* ---Mode selection----
     title_prompt = "Please choose the gamemode : "
     options = ["Normal","Puzzle"]
@@ -304,6 +342,8 @@ def main():
 
     # TODO Add difficulty, by increasing number of lines
     
+
+
     if puzzle_mode:
          #* ---Calculating a random puzzle matrix---
         src_puzzle = puzzle.buildPuzzle( (resolution[0],resolution[1]), number_of_lines)
@@ -372,7 +412,13 @@ def main():
         masked_camera_image = cv2.inRange(camera_source_img,lower_bound_bgr,upper_bound_bgr) # Matrix of 0's and 255's
 
         #* ---Drawing Core---
-        drawingCore(camera_source_img, masked_camera_image,src_img_gui,centroids,pencil_options,usp)
+        try:
+            drawingCore(camera_source_img, masked_camera_image,src_img_gui,centroids,pencil_options,usp,flip_flop,shape_points,puzzle_mode,puzzle_painted)
+        except:
+            try:
+                drawingCore(camera_source_img, masked_camera_image,src_img_gui,centroids,pencil_options,usp,flip_flop,shape_points,puzzle_mode,src_puzzle)
+            except:
+                drawingCore(camera_source_img, masked_camera_image,src_img_gui,centroids,pencil_options,usp,flip_flop,shape_points,puzzle_mode,0)
 
         #* ---Puzzle processing---
        
@@ -419,7 +465,7 @@ def main():
                 score = 0
             print("Your score is ",score," %.")
 
-        keyboardActions(pencil_options,src_img_gui,centroids,switcher)
+        keyboardActions(pencil_options,src_img_gui,centroids,flip_flop,shape_points)
 
         #-----------------------------
         # Visualization
@@ -428,7 +474,7 @@ def main():
 
         #* ---Switch the drawing background from whiteboard to camera and vise-versa---
 
-        switchOutput(src_img_gui,camera_source_img,switcher)
+        switchOutput(src_img_gui,camera_source_img,flip_flop)
 
         #* ---Image showing---
         

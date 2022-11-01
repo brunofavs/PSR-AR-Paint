@@ -129,6 +129,8 @@ def main():
 
 
     cv2.namedWindow("Segmentation",cv2.WINDOW_AUTOSIZE);
+    cv2.moveWindow('Segmentation', source_image_bgr.shape[1] + 90, 0 )
+    
     cv2.imshow("Segmentation",image_mask_bgr)
 
 
@@ -158,6 +160,7 @@ def main():
 
         image_mask = cv2.inRange(source_image_bgr, lower_bound_bgr, upper_bound_bgr)
         cv2.imshow('Segmentation',image_mask)
+
 
         pressed_key = cv2.waitKey(1) & 0xFF
 
