@@ -161,10 +161,6 @@ def main():
         image_mask = cv2.inRange(source_image_bgr, lower_bound_bgr, upper_bound_bgr)
         cv2.imshow('Segmentation',image_mask)
 
-<<<<<<< HEAD
-        cv2.moveWindow('Segmentation', source_image_bgr.shape[1] + 90, 0 )
-=======
->>>>>>> ad501604c3d3163a1f6b1319f61cd0dbffc283e8
 
         pressed_key = cv2.waitKey(1) & 0xFF
 

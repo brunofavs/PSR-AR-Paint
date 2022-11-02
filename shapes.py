@@ -5,6 +5,9 @@ from math import sqrt
 
 def drawRectangle(img2draw, points, options, shape_points, flip_flop,puzzle_mode,puzzle):
  
+    flip_flop['c_counter'] = 0
+    flip_flop['e_counter'] = 0
+
     if len(points['x'])<2 :
         return
 
@@ -33,6 +36,9 @@ def drawRectangle(img2draw, points, options, shape_points, flip_flop,puzzle_mode
 
 def drawCircle(img2draw, points, options, shape_points, flip_flop,puzzle_mode,puzzle):
     
+    flip_flop['r_counter'] = 0
+    flip_flop['e_counter'] = 0
+
     if len(points['x'])<2 :
         return
 
@@ -60,6 +66,9 @@ def drawCircle(img2draw, points, options, shape_points, flip_flop,puzzle_mode,pu
 
 def drawEllipse(img2draw, points, options, shape_points, flip_flop,puzzle_mode,puzzle):
     
+    flip_flop['c_counter'] = 0
+    flip_flop['r_counter'] = 0
+
     if len(points['x'])<2 :
         return
 
