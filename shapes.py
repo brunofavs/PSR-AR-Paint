@@ -3,12 +3,16 @@ from math import sqrt
 
 #! ------------------------ ADD COMMENTS TO THE FINAL VERSION ------------------------
 
-def drawRectangle(img2draw, points, options, shape_points, flip_flop,puzzle_mode):
+def drawRectangle(img2draw, points, options, shape_points, flip_flop,puzzle_mode,puzzle):
  
     if len(points['x'])<2 :
         return
 
-    copy = img2draw.copy()
+    if puzzle_mode:
+        copy = puzzle.copy()
+    else:
+        copy = img2draw.copy()
+
 
 
     shape_points['fpoints'] = (points['x'][-2],points['y'][-2] )
@@ -27,12 +31,15 @@ def drawRectangle(img2draw, points, options, shape_points, flip_flop,puzzle_mode
         flip_flop['r_counter'] = 0
 
 
-def drawCircle(img2draw, points, options, shape_points, flip_flop,puzzle_mode):
+def drawCircle(img2draw, points, options, shape_points, flip_flop,puzzle_mode,puzzle):
     
     if len(points['x'])<2 :
         return
 
-    copy = img2draw.copy()
+    if puzzle_mode:
+        copy = puzzle.copy()
+    else:
+        copy = img2draw.copy()
 
 
     shape_points['fpoints'] = (points['x'][-2],points['y'][-2] )
@@ -51,12 +58,15 @@ def drawCircle(img2draw, points, options, shape_points, flip_flop,puzzle_mode):
         flip_flop['c_counter'] = 0
 
 
-def drawEllipse(img2draw, points, options, shape_points, flip_flop,puzzle_mode):
+def drawEllipse(img2draw, points, options, shape_points, flip_flop,puzzle_mode,puzzle):
     
     if len(points['x'])<2 :
         return
 
-    copy = img2draw.copy()
+    if puzzle_mode:
+        copy = puzzle.copy()
+    else:
+        copy = img2draw.copy()
 
     shape_points['fpoints'] = (points['x'][-2],points['y'][-2] )
     center_point = abs((shape_points['fpoints'][0]+shape_points['ipoints'][0])//2), abs((shape_points['fpoints'][1]+shape_points['ipoints'][1])//2)

@@ -131,6 +131,7 @@ def keyboardActions(pencil_options,src_img_gui,centroids,flip_flop, shape_points
     pressed_key = cv2.waitKey(1) & 0xFF # To prevent NumLock issue
     if pressed_key  == ord('q'): 
         print("Quitting program")
+        cv2.destroyAllWindows
         exit()
     elif pressed_key == ord('r'):
         pencil_options['color'] = (0,0,255)
@@ -203,7 +204,7 @@ def keyboardActions(pencil_options,src_img_gui,centroids,flip_flop, shape_points
 
     #TODO implementar try except para caso não consiga escrever
 
-def drawingCore(camera_source_img, masked_camera_image,img_gui,centroids,pencil_options,usp,flip_flop,shape_points,puzzle_mode):
+def drawingCore(camera_source_img, masked_camera_image,img_gui,centroids,pencil_options,usp,flip_flop,shape_points,puzzle_mode,puzzle):
 
         #* ---Filtering the biggest blob in the image---
 
@@ -234,13 +235,13 @@ def drawingCore(camera_source_img, masked_camera_image,img_gui,centroids,pencil_
 
         #* ---Drawing---
         if flip_flop['r_counter'] != 0:
-            drawRectangle(img_gui, centroids, pencil_options, shape_points,flip_flop,puzzle_mode)
+            drawRectangle(img_gui, centroids, pencil_options, shape_points,flip_flop,puzzle_mode,puzzle)
 
         elif flip_flop['c_counter'] != 0:
-            drawCircle(img_gui, centroids, pencil_options, shape_points, flip_flop,puzzle_mode)
+            drawCircle(img_gui, centroids, pencil_options, shape_points, flip_flop,puzzle_mode,puzzle)
 
         elif flip_flop['e_counter'] != 0:
-            drawEllipse(img_gui, centroids, pencil_options, shape_points, flip_flop,puzzle_mode)
+            drawEllipse(img_gui, centroids, pencil_options, shape_points, flip_flop,puzzle_mode,puzzle)
 
         else:
             drawingLine(img_gui,centroids,pencil_options,usp)
@@ -408,15 +409,15 @@ def main():
 
         #* ---Drawing Core---
 
-        drawingCore(camera_source_img, masked_camera_image,src_img_gui,centroids,pencil_options,usp,flip_flop,shape_points,puzzle_mode)
+        # drawingCore(camera_source_img, masked_camera_image,src_img_gui,centroids,pencil_options,usp,flip_flop,shape_points,puzzle_mode)
 
-        # try:
-        #     drawingCore(camera_source_img, masked_camera_image,src_img_gui,centroids,pencil_options,usp,flip_flop,shape_points,puzzle_mode,puzzle_painted)
-        # except:
-        #     try:
-        #         drawingCore(camera_source_img, masked_camera_image,src_img_gui,centroids,pencil_options,usp,flip_flop,shape_points,puzzle_mode,src_puzzle)
-        #     except:
-        #         drawingCore(camera_source_img, masked_camera_image,src_img_gui,centroids,pencil_options,usp,flip_flop,shape_points,puzzle_mode,0)
+        try:
+            drawingCore(camera_source_img, masked_camera_image,src_img_gui,centroids,pencil_options,usp,flip_flop,shape_points,puzzle_mode,puzzle_painted)
+        except:
+            try:
+                drawingCore(camera_source_img, masked_camera_image,src_img_gui,centroids,pencil_options,usp,flip_flop,shape_points,puzzle_mode,src_puzzle)
+            except:
+                drawingCore(camera_source_img, masked_camera_image,src_img_gui,centroids,pencil_options,usp,flip_flop,shape_points,puzzle_mode,0)
 
         #* ---Puzzle processing---
        
@@ -497,38 +498,10 @@ def main():
             cv2.moveWindow("Drawing" ,x = resolution[1]+200 ,y = 0)
 
         
-        
-            
     #-----------------------------
     # Termination
     #-----------------------------
 
-
-
-
-
-
-
-
 if __name__ == "__main__":
     main()
 
-        # TODO Clean this once debugged
-
-            # red_only_mask = red_only_mask.astype(np.uint8)  #convert to an unsigned byte
-            # red_only_mask*=255
-
-            # green_only_mask = green_only_mask.astype(np.uint8)  #convert to an unsigned byte
-            # green_only_mask*=255
-
-            # blue_only_mask = blue_only_mask.astype(np.uint8)  #convert to an unsigned byte
-            # blue_only_mask*=255
-
-            # cv2.imshow('red',red_only_mask)
-            # cv2.imshow('green',green_only_mask)
-            # cv2.imshow('blue',blue_only_mask)
-
-
-            # # cv2.imshow('blue channel',blue_channel)
-            # # cv2.imshow('green channel',green_channel)
-            # # cv2.imshow('red channel',red_channel)
