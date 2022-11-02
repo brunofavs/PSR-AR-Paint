@@ -203,7 +203,7 @@ def keyboardActions(pencil_options,src_img_gui,centroids,flip_flop, shape_points
 
     #TODO implementar try except para caso não consiga escrever
 
-def drawingCore(camera_source_img, masked_camera_image,img_gui,centroids,pencil_options,usp,flip_flop,shape_points,puzzle_mode,puzzle_img):
+def drawingCore(camera_source_img, masked_camera_image,img_gui,centroids,pencil_options,usp,flip_flop,shape_points,puzzle_mode):
 
         #* ---Filtering the biggest blob in the image---
 
@@ -230,23 +230,18 @@ def drawingCore(camera_source_img, masked_camera_image,img_gui,centroids,pencil_
         if len(centroids['x']) >= 5 :
             centroids['x'] = centroids['x'][-2:] # If the list gets too big, cleans it back to the last 2, which are needed for drawing
             centroids['y'] = centroids['y'][-2:] 
-
-        #* ---Selecting which image to pass on to shapes drawing---
-
-        if puzzle_mode:
-            shape_copy_img = puzzle_img
-        else:
-            shape_copy_img = img_gui
-
-        
+    
 
         #* ---Drawing---
         if flip_flop['r_counter'] != 0:
-            drawRectangle(shape_copy_img, centroids, pencil_options, shape_points, flip_flop,puzzle_mode)
+            drawRectangle(img_gui, centroids, pencil_options, shape_points,flip_flop,puzzle_mode)
+
         elif flip_flop['c_counter'] != 0:
-            drawCircle(shape_copy_img, centroids, pencil_options, shape_points, flip_flop,puzzle_mode)
+            drawCircle(img_gui, centroids, pencil_options, shape_points, flip_flop,puzzle_mode)
+
         elif flip_flop['e_counter'] != 0:
-            drawEllipse(shape_copy_img, centroids, pencil_options, shape_points, flip_flop,puzzle_mode)
+            drawEllipse(img_gui, centroids, pencil_options, shape_points, flip_flop,puzzle_mode)
+
         else:
             drawingLine(img_gui,centroids,pencil_options,usp)
             
@@ -412,13 +407,16 @@ def main():
         masked_camera_image = cv2.inRange(camera_source_img,lower_bound_bgr,upper_bound_bgr) # Matrix of 0's and 255's
 
         #* ---Drawing Core---
-        try:
-            drawingCore(camera_source_img, masked_camera_image,src_img_gui,centroids,pencil_options,usp,flip_flop,shape_points,puzzle_mode,puzzle_painted)
-        except:
-            try:
-                drawingCore(camera_source_img, masked_camera_image,src_img_gui,centroids,pencil_options,usp,flip_flop,shape_points,puzzle_mode,src_puzzle)
-            except:
-                drawingCore(camera_source_img, masked_camera_image,src_img_gui,centroids,pencil_options,usp,flip_flop,shape_points,puzzle_mode,0)
+
+        drawingCore(camera_source_img, masked_camera_image,src_img_gui,centroids,pencil_options,usp,flip_flop,shape_points,puzzle_mode)
+
+        # try:
+        #     drawingCore(camera_source_img, masked_camera_image,src_img_gui,centroids,pencil_options,usp,flip_flop,shape_points,puzzle_mode,puzzle_painted)
+        # except:
+        #     try:
+        #         drawingCore(camera_source_img, masked_camera_image,src_img_gui,centroids,pencil_options,usp,flip_flop,shape_points,puzzle_mode,src_puzzle)
+        #     except:
+        #         drawingCore(camera_source_img, masked_camera_image,src_img_gui,centroids,pencil_options,usp,flip_flop,shape_points,puzzle_mode,0)
 
         #* ---Puzzle processing---
        
