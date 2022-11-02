@@ -179,8 +179,10 @@ def keyboardActions(pencil_options,src_img_gui,centroids,flip_flop, shape_points
         flip_flop['switcher'] = not flip_flop['switcher']
     
     elif pressed_key == ord('p'):
+        
+        rectangle_conditions = (flip_flop['c_counter'] == 0) and (flip_flop['e_counter'] == 0) and len(centroids['x'])>=2
 
-        if len(centroids['x']) >= 2 :
+        if rectangle_conditions :
             flip_flop['r_counter'] += 1
 
             if flip_flop['r_counter'] == 1:
@@ -188,7 +190,9 @@ def keyboardActions(pencil_options,src_img_gui,centroids,flip_flop, shape_points
     
     elif pressed_key == ord('o'):
 
-        if len(centroids['x']) >= 2 :
+        circle_conditions = (flip_flop['r_counter'] == 0) and (flip_flop['e_counter'] == 0) and len(centroids['x'])>=2
+
+        if circle_conditions :
             flip_flop['c_counter'] += 1
 
             if flip_flop['c_counter'] == 1:
@@ -196,7 +200,9 @@ def keyboardActions(pencil_options,src_img_gui,centroids,flip_flop, shape_points
            
     elif pressed_key == ord('e'):
 
-        if len(centroids['x']) >= 2 :
+        elipse_conditions = (flip_flop['r_counter'] == 0) and (flip_flop['c_counter'] == 0) and len(centroids['x'])>=2
+
+        if elipse_conditions :
             flip_flop['e_counter'] += 1
 
             if flip_flop['e_counter'] == 1:
@@ -232,6 +238,7 @@ def drawingCore(camera_source_img, masked_camera_image,img_gui,centroids,pencil_
             centroids['x'] = centroids['x'][-2:] # If the list gets too big, cleans it back to the last 2, which are needed for drawing
             centroids['y'] = centroids['y'][-2:] 
     
+
 
         #* ---Drawing---
         if flip_flop['r_counter'] != 0:
