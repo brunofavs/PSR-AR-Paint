@@ -24,7 +24,6 @@ from functools import partial
 from copy import deepcopy
 from collections import namedtuple
 from shapes import drawRectangle, drawCircle, drawEllipse
-from shapes import drawRectangle, drawCircle, drawEllipse
 
 #-----------
 # Global variables
