@@ -6,6 +6,10 @@ from math import sqrt
 def drawRectangle(whiteboard, points, options, shape_points, flip_flop):
  
     copy = whiteboard.copy()
+    
+    if len(points) == []:
+        print('reached')
+        return
 
     shape_points['fpoints'] = (points['x'][-2],points['y'][-2] )
     
@@ -33,7 +37,7 @@ def drawCircle(whiteboard, points, options, shape_points, flip_flop):
 
 
 def drawEllipse(whiteboard, points, options, shape_points, flip_flop):
-    
+
     copy = whiteboard.copy()
 
     shape_points['fpoints'] = (points['x'][-2],points['y'][-2] )
