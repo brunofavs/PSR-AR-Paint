@@ -15,7 +15,6 @@ from math import sqrt
 import cv2
 import numpy as np
 import json
-import pprint
 import time
 import pick
 
@@ -25,6 +24,7 @@ from functools import partial
 from copy import deepcopy
 from collections import namedtuple
 from shapes import drawRectangle, drawCircle, drawEllipse
+from shapes import drawRectangle, drawCircle, drawEllipse
 
 #-----------
 # Global variables
@@ -32,6 +32,8 @@ from shapes import drawRectangle, drawCircle, drawEllipse
 
 centroid_tuple = namedtuple('centroid_tuple',['x','y']) # No point in being a dictionary as I dont ever want to change the coordinates of the centroid
 # First is the object name, the str is whats shown when printed
+
+usp_sensitivity = 100 # Used a global because usp is in a nested function
 
 #-----------
 # Functions
@@ -115,7 +117,7 @@ def drawingLine(white_board,points,options,usp):
     #* ---Checking whether distance is good if ups----
     if usp: 
         distance = round(sqrt((inicial_point[0]-final_point[0])**2+(inicial_point[1]-final_point[1])**2))
-        if distance > 100:
+        if distance > usp_sensitivity:
             cv2.circle(white_board, (points['x'][-1],points['y'][-1]) , options['size'] //2 ,options['color'], -1)
             return
 
@@ -129,6 +131,7 @@ def keyboardActions(pencil_options,src_img_gui,centroids,flip_flop, shape_points
     pressed_key = cv2.waitKey(1) & 0xFF # To prevent NumLock issue
     if pressed_key  == ord('q'): 
         print("Quitting program")
+        cv2.destroyAllWindows
         exit()
     elif pressed_key == ord('r'):
         pencil_options['color'] = (0,0,255)
@@ -176,23 +179,32 @@ def keyboardActions(pencil_options,src_img_gui,centroids,flip_flop, shape_points
         flip_flop['switcher'] = not flip_flop['switcher']
     
     elif pressed_key == ord('p'):
-        flip_flop['r_counter'] += 1
-        if flip_flop['r_counter'] == 1:
-            shape_points['ipoints'] = (centroids['x'][-2],centroids['y'][-2] )
+
+        if len(centroids['x']) >= 2 :
+            flip_flop['r_counter'] += 1
+
+            if flip_flop['r_counter'] == 1:
+                shape_points['ipoints'] = (centroids['x'][-2],centroids['y'][-2] )
     
     elif pressed_key == ord('o'):
-        flip_flop['c_counter'] += 1
-        if flip_flop['c_counter'] == 1:
-            shape_points['ipoints'] = (centroids['x'][-2],centroids['y'][-2] )
+
+        if len(centroids['x']) >= 2 :
+            flip_flop['c_counter'] += 1
+
+            if flip_flop['c_counter'] == 1:
+                shape_points['ipoints'] = (centroids['x'][-2],centroids['y'][-2] )
            
     elif pressed_key == ord('e'):
-        flip_flop['e_counter'] += 1
-        if flip_flop['e_counter'] == 1:
-            shape_points['ipoints'] = (centroids['x'][-2],centroids['y'][-2] )
+
+        if len(centroids['x']) >= 2 :
+            flip_flop['e_counter'] += 1
+
+            if flip_flop['e_counter'] == 1:
+                shape_points['ipoints'] = (centroids['x'][-2],centroids['y'][-2] )
 
     #TODO implementar try except para caso não consiga escrever
 
-def drawingCore(camera_source_img, masked_camera_image,img_gui,centroids,pencil_options,usp,flip_flop,shape_points):
+def drawingCore(camera_source_img, masked_camera_image,img_gui,centroids,pencil_options,usp,flip_flop,shape_points,puzzle_mode,puzzle):
 
         #* ---Filtering the biggest blob in the image---
 
@@ -219,17 +231,21 @@ def drawingCore(camera_source_img, masked_camera_image,img_gui,centroids,pencil_
         if len(centroids['x']) >= 5 :
             centroids['x'] = centroids['x'][-2:] # If the list gets too big, cleans it back to the last 2, which are needed for drawing
             centroids['y'] = centroids['y'][-2:] 
+    
 
         #* ---Drawing---
         if flip_flop['r_counter'] != 0:
-            drawRectangle(img_gui, centroids, pencil_options, shape_points, flip_flop)
+            drawRectangle(img_gui, centroids, pencil_options, shape_points,flip_flop,puzzle_mode,puzzle)
+
         elif flip_flop['c_counter'] != 0:
-            drawCircle(img_gui, centroids, pencil_options, shape_points, flip_flop)
+            drawCircle(img_gui, centroids, pencil_options, shape_points, flip_flop,puzzle_mode,puzzle)
+
         elif flip_flop['e_counter'] != 0:
-            drawEllipse(img_gui, centroids, pencil_options, shape_points, flip_flop)
+            drawEllipse(img_gui, centroids, pencil_options, shape_points, flip_flop,puzzle_mode,puzzle)
+
         else:
             drawingLine(img_gui,centroids,pencil_options,usp)
-            
+   
         #* ---Showing biggest object in mask---
 
         #! This is here because cc_masked_camera_image is only relevant inside this fc and didn't want to have it as output
@@ -249,6 +265,7 @@ def main():
     #-----------------------------
     # Initialization
     #-----------------------------
+    global usp_sensitivity
 
     #* ---Configuration of argparse----
     parser = argparse.ArgumentParser(description='AR paint') 
@@ -273,6 +290,25 @@ def main():
         puzzle_mode = True
     else:
         return 
+
+    #* ---Difficulty----
+
+    if puzzle_mode:
+
+        title_difficulty = "Please choose your difficulty : "
+        difficulties = ["Easy","Normal","Hard","INSANE"]
+        chosen_dificulty, index = pick.pick(difficulties, title_difficulty,indicator="=>")
+
+        if  index == 0:
+            number_of_lines = 3
+        elif index == 1:
+            number_of_lines = 4
+        elif index == 2:
+            number_of_lines = 7
+        elif index == 3:
+            number_of_lines = 11
+        else:
+            return 
 
     #* ---Loading json file into memory----
     json_inicial_object = open(args.json)
@@ -302,9 +338,11 @@ def main():
 
     # TODO Add difficulty, by increasing number of lines
     
+
+
     if puzzle_mode:
          #* ---Calculating a random puzzle matrix---
-        src_puzzle = puzzle.buildPuzzle( (resolution[0],resolution[1]), 10)
+        src_puzzle = puzzle.buildPuzzle( (resolution[0],resolution[1]), number_of_lines)
 
          #* ---Sum of all puzzle pixels in 1D---
         num_of_puzzle_pixels = src_puzzle[:,:,0].size#Important to not include the black pixels in the total, also not the letters
@@ -342,11 +380,26 @@ def main():
         cv2.setMouseCallback("Puzzle",partial(mouseCallback,points = centroids))
     else:
         cv2.setMouseCallback("Drawing",partial(mouseCallback,points = centroids))
-  
 
+   #* ---Adding trackbar to change usp sensibility if on---
 
+    if usp:
+        if puzzle_mode:
+            cv2.createTrackbar("Usp_sensibility","Puzzle",usp_sensitivity,400,lambda x:x)
+        elif normal_mode:
+            cv2.createTrackbar("Usp_sensibility","Drawing",usp_sensitivity,400,lambda x:x)
+
+   
     while(1):
+        #* ---Updating usp sensibility---
+
         
+        if puzzle_mode:
+            usp_sensitivity = cv2.getTrackbarPos("Usp_sensibility","Puzzle")
+        elif normal_mode:
+            usp_sensitivity = cv2.getTrackbarPos("Usp_sensibility","Drawing")
+
+
         #* ---Camera source image processing---
         _,camera_source_img = capture_object.read()
         camera_source_img = cv2.flip(camera_source_img,1) # Flip image on x-axis
@@ -355,7 +408,16 @@ def main():
         masked_camera_image = cv2.inRange(camera_source_img,lower_bound_bgr,upper_bound_bgr) # Matrix of 0's and 255's
 
         #* ---Drawing Core---
-        drawingCore(camera_source_img, masked_camera_image,src_img_gui,centroids,pencil_options,usp,flip_flop,shape_points)
+
+        # drawingCore(camera_source_img, masked_camera_image,src_img_gui,centroids,pencil_options,usp,flip_flop,shape_points,puzzle_mode)
+
+        try:
+            drawingCore(camera_source_img, masked_camera_image,src_img_gui,centroids,pencil_options,usp,flip_flop,shape_points,puzzle_mode,puzzle_painted)
+        except:
+            try:
+                drawingCore(camera_source_img, masked_camera_image,src_img_gui,centroids,pencil_options,usp,flip_flop,shape_points,puzzle_mode,src_puzzle)
+            except:
+                drawingCore(camera_source_img, masked_camera_image,src_img_gui,centroids,pencil_options,usp,flip_flop,shape_points,puzzle_mode,0)
 
         #* ---Puzzle processing---
        
@@ -395,6 +457,9 @@ def main():
             # print(num_of_puzzle_pixels)
             score = int((score_numerator/num_of_puzzle_pixels)*100)
 
+
+            
+
             if score < 0:
                 score = 0
             print("Your score is ",score," %.")
@@ -433,38 +498,10 @@ def main():
             cv2.moveWindow("Drawing" ,x = resolution[1]+200 ,y = 0)
 
         
-        
-            
     #-----------------------------
     # Termination
     #-----------------------------
 
-
-
-
-
-
-
-
 if __name__ == "__main__":
     main()
 
-        # TODO Clean this once debugged
-
-            # red_only_mask = red_only_mask.astype(np.uint8)  #convert to an unsigned byte
-            # red_only_mask*=255
-
-            # green_only_mask = green_only_mask.astype(np.uint8)  #convert to an unsigned byte
-            # green_only_mask*=255
-
-            # blue_only_mask = blue_only_mask.astype(np.uint8)  #convert to an unsigned byte
-            # blue_only_mask*=255
-
-            # cv2.imshow('red',red_only_mask)
-            # cv2.imshow('green',green_only_mask)
-            # cv2.imshow('blue',blue_only_mask)
-
-
-            # # cv2.imshow('blue channel',blue_channel)
-            # # cv2.imshow('green channel',green_channel)
-            # # cv2.imshow('red channel',red_channel)
