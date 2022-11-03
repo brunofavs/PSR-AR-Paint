@@ -126,7 +126,7 @@ def drawingLine(white_board,points,options,usp):
     #modifying the inicial image, not changing the original memory adress
     cv2.line(white_board, inicial_point, final_point, options['color'], options['size'])
     
-def keyboardActions(pencil_options,src_img_gui,centroids,flip_flop, shape_points):
+def keyboardActions(pencil_options,src_img_gui,centroids,flip_flop, shape_points,puzzle_mode,puzzle_painted):
     pressed_key = cv2.waitKey(1) & 0xFF # To prevent NumLock issue
     if pressed_key  == ord('q'): 
         print("Quitting program")
@@ -172,7 +172,12 @@ def keyboardActions(pencil_options,src_img_gui,centroids,flip_flop, shape_points
         date = time.ctime(time.time())
         file_name = "Drawing " + date +".png"
         print("Saving png image as " + file_name)
-        cv2.imwrite(file_name , src_img_gui) #! Caso seja com o video pode ter de se mudar aqui
+
+        if puzzle_mode:
+            cv2.imwrite(file_name , puzzle_painted) #! Caso seja com o video pode ter de se mudar aqui
+        else:
+            cv2.imwrite(file_name , src_img_gui) #! Caso seja com o video pode ter de se mudar aqui
+
 
     elif pressed_key == ord('v'):
         flip_flop['switcher'] = not flip_flop['switcher']
@@ -469,8 +474,9 @@ def main():
             if score < 0:
                 score = 0
             print("Your score is ",score," %.")
+            cv2.putText(puzzle_painted,"Score is " +str(score)+" %",(20,20),cv2.FONT_HERSHEY_SIMPLEX,0.5,(0,0,0), 1, cv2.LINE_AA)
 
-        keyboardActions(pencil_options,src_img_gui,centroids,flip_flop,shape_points)
+        keyboardActions(pencil_options,src_img_gui,centroids,flip_flop,shape_points,puzzle_mode,puzzle_painted)
 
         #-----------------------------
         # Visualization
